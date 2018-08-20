@@ -361,21 +361,28 @@ def getToRaidscreen(maxAttempts, checkAll=False):
             # maybe send email? :D
         else:
             lastScreenshotTaken = time.time()
-    if pogoWindowManager.isGpsSignalLost('screenshot.png', 123):
-        log.warning("getToRaidscreen: GPS signal error. Restarting pogo -_-\"")
-        restartPogo()
-        if not screenWrapper.getScreenshot('screenshot.png'):
-            log.error("getToRaidscreen: Failed retrieving screenshot before checking windows")
-            return False
-        else:
-            lastScreenshotTaken = time.time()
 
     attempts = 0
+    redErrorCount = 0
     while not pogoWindowManager.checkRaidscreen('screenshot.png', 123):
         if attempts > maxAttempts:
             # could not reach raidtab in given maxAttempts
             log.error("getToRaidscreen: Could not get to raidtab within %s attempts" % str(maxAttempts))
             return False
+
+        if pogoWindowManager.isGpsSignalLost('screenshot.png', 123):
+            log.warning("getToRaidscreen: GPS signal error")
+            redErrorCount += 1
+            if redErrorCount > 3:
+                log.error("getToRaidscreen: Red error multiple times in a row, restarting")
+                restartPogo()
+            if not screenWrapper.getScreenshot('screenshot.png'):
+                log.error("getToRaidscreen: Failed retrieving screenshot before checking windows")
+                return False
+            else:
+                lastScreenshotTaken = time.time()
+            time.sleep(1)
+            continue
         # not using continue since we need to get a screen before the next round...
         found = pogoWindowManager.checkSpeedwarning('screenshot.png', 123)
         if checkAll:

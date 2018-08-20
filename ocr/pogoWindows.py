@@ -78,6 +78,8 @@ class PogoWindows:
 
         log.debug("isGpsSignalLost: checking for red bar")
         col = cv2.imread(filename)
+        if col is None:
+            return False
         bounds = None
         bounds = self.resolutionCalculator.getGpsErrorBounds()
 

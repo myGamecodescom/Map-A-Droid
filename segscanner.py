@@ -425,7 +425,7 @@ class Scanner:
 
         img = cv2.imread(filenameOfCrop)
 
-        raidhash = img[0	:175, 0:170]
+        raidhash = img[0:175, 0:170]
         raidhash = self.cropImage(raidhash, raidNo)
 
         raidhashPic = os.path.join(self.tempPath, str(hash) + "_raidhash" + str(raidNo) +".jpg")

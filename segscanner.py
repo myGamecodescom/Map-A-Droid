@@ -425,7 +425,7 @@ class Scanner:
 
         img = cv2.imread(filenameOfCrop)
 
-        raidhash = img[0:175, 0:170]
+        raidhash = img[0	:175, 0:170]
         raidhash = self.cropImage(raidhash, raidNo)
 
         raidhashPic = os.path.join(self.tempPath, str(hash) + "_raidhash" + str(raidNo) +".jpg")
@@ -501,9 +501,12 @@ class Scanner:
             if not monFound[0]:
                 #we could not determine the mon... let's move the crop to unknown and stop analysing
                 log.warning('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Could not determine mon in crop, aborting and moving crop to unknown')
-                self.unknownfound(filenameOfCrop, 'mon', False, raidNo, hash, captureTime, False, captureLat, captureLng)
+                monUnkPic = os.path.join(self.tempPath, str(hash) + "_unkmon" + str(raidNo) +".jpg")
+                cv2.imwrite(monUnkPic, monFound[1])
+                self.unknownfound(monUnkPic, 'mon', False, raidNo, hash, captureTime, False, captureLat, captureLng)
                 log.warning('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: could not determine mon, aborting analysis')
                 os.remove(raidhashPic)
+                os.remove(monUnkPic)
                 os.remove(filenameOfCrop)
                 return True
             log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Scanning Gym')

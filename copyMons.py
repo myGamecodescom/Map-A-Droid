@@ -73,9 +73,9 @@ class MonRaidImages(object):
                     canvas.paste(image, mask=image) # Paste the image onto the canvas, using it's alpha channel as mask
                     canvas.save(monFile, format="PNG")
 
-                    monAsset = cv2.imread(monFile,3)
+                    monAsset = cv2.imread(monFile,cv2.IMREAD_UNCHANGED)
                     height, width, channels = monAsset.shape
-                    monAsset = cv2.inRange(monAsset,np.array([240,240,240]),np.array([255,255,255]))
+                    monAsset = cv2.inRange(monAsset,np.array([240,240,240, 125]),np.array([255,255,255,255]))
                     cv2.imwrite(monFile, monAsset)
                     crop = cv2.imread(monFile,3)
                     crop = crop[0:int(height), 0:int((width/10)*10)]

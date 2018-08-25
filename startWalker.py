@@ -340,7 +340,7 @@ def startPogo(withLock=True):
     return reachedRaidtab
 
 
-def getToRaidscreen(maxAttempts, checkAll=False):
+def getToRaidscreen(maxAttempts, checkAll=False, again=False):
     # check for any popups (including post login OK)
     global lastScreenshotTaken
 
@@ -360,7 +360,10 @@ def getToRaidscreen(maxAttempts, checkAll=False):
         time.sleep(args.post_screenshot_delay)
         if not screenWrapper.getScreenshot('screenshot.png'):
             log.error("getToRaidscreen: Failed retrieving screenshot before checking windows")
-            return False
+            if not again:
+                getToRaidscreen(maxAttempts, True)
+            else:
+                return False
             # failcount += 1
             # TODO: consider proper errorhandling?
             # even restart entire thing? VNC dead means we won't be using the device

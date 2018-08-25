@@ -129,19 +129,77 @@ class Scanner:
         foundmon = None
         monID = None
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'Extracting Raidboss')
-        lower = np.array([80, 60, 30], dtype = "uint8")
-        upper = np.array([110, 90, 70], dtype = "uint8")
+        picName = os.path.join(self.tempPath, str(hash) + '_raidboss' + str(raidNo) +'.jpg')
+
+
         kernel = np.ones((3,3),np.uint8)
         kernel2 = np.ones((6,6),np.uint8)
-        raidMonZoom = cv2.resize(raidpic, (0,0), fx=2, fy=2)
-        mask = cv2.inRange(raidMonZoom, lower, upper)
-        output = cv2.bitwise_and(raidMonZoom, raidMonZoom, mask = mask)
-        monAsset = cv2.inRange(output,np.array([0,0,0]),np.array([15,15,15]))
-        monAsset = cv2.morphologyEx(monAsset, cv2.MORPH_CLOSE, kernel)
-        monAsset = cv2.morphologyEx(monAsset, cv2.MORPH_OPEN, kernel2)
+        #raidMonZoom = cv2.resize(raidpic, (0,0), fx=2, fy=2)
+        raidMonZoom = cv2.bitwise_not(raidpic)
+        raidMonZoom = cv2.GaussianBlur(raidMonZoom, (3, 3), 0)
+        #raidMonZoom = raidpic
+        hsv = cv2.cvtColor(raidMonZoom, cv2.COLOR_BGR2HSV)
+        accumMask = np.zeros(hsv.shape[:2], dtype="uint8")
+        #cv2.imwrite(picName, raidMonZoom)
+        #sys.exit(1)
+        # define the list of color boundaries
+        boundaries = [
+  #          ([0,38,25],[20,64,190])
+            #([0,0,0],[255,255,255])
 
-        picName = os.path.join(self.tempPath, str(hash) + '_raidboss' + str(raidNo) +'.jpg')
-        cv2.imwrite(picName, monAsset)
+            #([10,30,110],[20,80,180]),
+            #([10,10,130],[25,70,160]),
+            #([95,40,40],[170,120,80]),
+            #([75,0,110],[90,40,180]),
+            #([160,0,120],[180,40,170])
+            ([1,25,158],[45,60,205]),
+            ([0, 10, 100],[10,45,150]), # legs of yanma
+            ([15,5,150],[30,55,230]),
+            ([13,12,125],[18,75,230]),
+            ([145,0,60],[155,50,150]),
+            ([100,12,50],[145,105,130]),
+            ([160,0,5],[180,100,180]),
+            ([95,25,50],[105,105,105]), #TODO
+            ([0,35,45],[15,65,72]),
+            ([10,50,200],[20,75,230]),
+            ([9,20,150],[19,65,210])
+        ]
+
+        # loop over the boundaries
+        for (lower, upper) in boundaries:
+            # create NumPy arrays from the boundaries
+            lower = np.array(lower, dtype="uint8")
+            upper = np.array(upper, dtype="uint8")
+
+            # find the colors within the specified boundaries
+            mask = cv2.inRange(hsv, lower, upper)
+
+            # merge the mask into the accumulated masks
+            accumMask = cv2.bitwise_or(accumMask, mask)
+
+        #accumMask = cv2.GaussianBlur(accumMask, (3, 3), 0)
+        output = cv2.bitwise_and(raidMonZoom, raidMonZoom, mask = accumMask)
+
+
+        monAsset = cv2.bitwise_not(output)
+        #monAsset = cv2.Canny(monAsset, 100, 200)
+        monAsset = cv2.cvtColor(monAsset, cv2.COLOR_HSV2BGR)
+
+        #cv2.imwrite(picName, output)
+        #sys.exit(1)
+
+        gray_image = cv2.cvtColor(monAsset, cv2.COLOR_BGR2GRAY)
+
+        ret, thresh1 = cv2.threshold(gray_image, 60, 255, cv2.THRESH_BINARY)
+        thresh1 = cv2.resize(thresh1, (0, 0), fx=2, fy=2)
+
+        #cv2.imwrite(picName, thresh1)
+        #sys.exit(1)
+        #monAsset = cv2.inRange(output,np.array([0,0,0]),np.array([15,15,15]))
+        #monAsset = cv2.morphologyEx(monAsset, cv2.MORPH_CLOSE, kernel)
+        #monAsset = cv2.morphologyEx(monAsset, cv2.MORPH_OPEN, kernel2)
+
+        cv2.imwrite(picName, thresh1)
 
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'detectRaidBoss: Scanning Raidboss')
         monHash = self.imageHashExists(os.path.join(self.tempPath, str(hash) + '_raidboss' + str(raidNo) + '.jpg'), False, 'mon-' + str(lvl), raidNo)
@@ -149,7 +207,7 @@ class Scanner:
 
         if monHash is None:
             for file in glob.glob("mon_img/_mon_*_" + str(lvl) + ".png"):
-
+                log.debug("Comparing to %s" % str(file))
                 find_mon = mt.fort_image_matching(file, picName, False, 0.60, raidNo, hash)
 
                 if foundmon is None or find_mon > foundmon[0]:
@@ -163,17 +221,17 @@ class Scanner:
             log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'detectRaidBoss: Found mon in mon_img: ' + str(monID))
 
         else:
-            os.remove(picName)
+            #os.remove(picName)
             return monHash, monAsset
 
         if monID:
             self.imageHash(picName, monID, False, 'mon-' + str(lvl), raidNo)
-            os.remove(picName)
+            #os.remove(picName)
             return monID, monAsset
 
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'No Mon found!')
 
-        os.remove(picName)
+        #os.remove(picName)
         return False, monAsset
 
     def detectLevel(self, raidpic, hash, raidNo):
@@ -184,7 +242,7 @@ class Scanner:
                     'mon_img/_raidlevel_1_.jpg']
 
         raidlevel = raidpic[230:260, 0:170]
-        #raidlevel = cv2.resize(raidlevel, (0,0), fx=2, fy=2)
+        raidlevel = cv2.resize(raidlevel, (0,0), fx=2, fy=2)
 
         cv2.imwrite(os.path.join(self.tempPath, str(hash) + '_raidlevel' + str(raidNo) + '.jpg'), raidlevel)
 
@@ -306,14 +364,14 @@ class Scanner:
         if captureTime:
             text = datetime.datetime.fromtimestamp(float(captureTime))
             text = "Scanned: " + str(text.strftime("%Y-%m-%d %H:%M"))
-            self.addTextToCrop(raidpic, text)
+            self.addTextToCrop(raidpic, text, True)
         
         raidpic = cv2.imread(raidpic)
         cv2.imwrite(os.path.join(self.unknownPath, str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(time.time()) +  "_" + str(imageHash) +".jpg"), raidpic)
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'unknownfound: Write unknown file: ' + str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(time.time()) +".jpg")
         return True
         
-    def addTextToCrop(self, picture, text):
+    def addTextToCrop(self, picture, text, grayscale=False):
         from PIL import Image, ImageFont, ImageDraw
         img = Image.open(picture)
         draw = ImageDraw.Draw(img)
@@ -322,7 +380,10 @@ class Scanner:
         
         w, h = font.getsize(text)
         draw.rectangle((x, y, x + img.size[0] , y + h + 1), fill='black')
-        draw.text((x, y),text,(255,255,255),font=font)
+        if grayscale:
+            draw.text((x, y),text,(255),font=font)
+        else:
+            draw.text((x, y), text, (255,255,255), font=font)
         img.save(picture)
         
     def successfound(self, raidpic, type, gymId, raidNo, lvl, captureTime, mon=0):
@@ -416,6 +477,7 @@ class Scanner:
         eggfound = False
 
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Starting analysis of ID %s' % str(hash))
+        origCrop = cv2.imread(filenameOfCrop)
 
         img_temp = Image.open(filenameOfCrop)
         hpercent = (270/float(img_temp.size[1]))
@@ -497,7 +559,7 @@ class Scanner:
 
         if not eggfound:
             log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Found the crop to contain a raidboss, lets see what boss it is')
-            monFound = self.detectRaidBoss(img, raidlevel, hash, raidNo)
+            monFound = self.detectRaidBoss(origCrop, raidlevel, hash, raidNo)
             if not monFound[0]:
                 #we could not determine the mon... let's move the crop to unknown and stop analysing
                 log.warning('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Could not determine mon in crop, aborting and moving crop to unknown')

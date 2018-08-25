@@ -44,14 +44,14 @@ def fort_image_matching(url_img_name, fort_img_name, zoom, value, raidNo, hash, 
 
     else:
         tempFile = str(hash) + "_resize_" + str(raidNo) +".jpg"
-        #img_temp = Image.open(fort_img_name)
-        #wsize = int((float(img_temp.size[0]))*2)
-        #hsize = int((float(img_temp.size[1]))*2)
-        #img_temp = img_temp.resize((wsize,hsize), Image.ANTIALIAS)
-        #img_temp.save(tempFile)
-        #fort_img = cv2.imread(tempFile,3)
+        img_temp = Image.open(fort_img_name)
+        wsize = int((float(img_temp.size[0]))*2)
+        hsize = int((float(img_temp.size[1]))*2)
+        img_temp = img_temp.resize((wsize,hsize), Image.ANTIALIAS)
+        img_temp.save(tempFile)
+        fort_img = cv2.imread(tempFile,3)
         crop = url_img
-        #os.remove(tempFile)
+        os.remove(tempFile)
         npValue= 1.0
 
     if crop.mean() == 255 or crop.mean() == 0:
@@ -72,14 +72,14 @@ def fort_image_matching(url_img_name, fort_img_name, zoom, value, raidNo, hash, 
         (_, maxVal, _, maxLoc) = cv2.minMaxLoc(result)
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(hash) +') ] ' + 'Filename: ' + str(url_img_name) + ' Matchvalue: ' + str(maxVal))
 
-
         if found is None or maxVal > found[0]:
-	        found = (maxVal, maxLoc, r)
+            found = (maxVal, maxLoc, r)
 
-    if found[0] < value:
+    if found is None or found[0] < value:
         return 0.0
 
     return found[0]
+
 
 if __name__ == '__main__':
     fort_id = 'raid1'

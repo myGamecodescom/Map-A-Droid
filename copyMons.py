@@ -73,15 +73,26 @@ class MonRaidImages(object):
                     canvas.paste(image, mask=image) # Paste the image onto the canvas, using it's alpha channel as mask
                     canvas.save(monFile, format="PNG")
 
-                    monAsset = cv2.imread(monFile,cv2.IMREAD_UNCHANGED)
+                    monAsset = cv2.imread(monFile,3)
                     height, width, channels = monAsset.shape
-                    monAsset = cv2.inRange(monAsset,np.array([240,240,240, 125]),np.array([255,255,255,255]))
+                    monAsset = cv2.inRange(monAsset,np.array([240,240,240]),np.array([255,255,255]))
                     cv2.imwrite(monFile, monAsset)
                     crop = cv2.imread(monFile,3)
                     crop = crop[0:int(height), 0:int((width/10)*10)]
-                    kernel = np.ones((1,1),np.uint8)
+                    kernel = np.ones((2,2),np.uint8)
                     crop = cv2.erode(crop,kernel,iterations = 1)
-                    cv2.imwrite(monFile, crop)
+                    kernel = np.ones((3,3),np.uint8)
+                    crop = cv2.morphologyEx(crop, cv2.MORPH_CLOSE, kernel)
+
+                    #gray = cv2.cvtColor(crop,cv2.COLOR_BGR2GRAY)
+                    #_,thresh = cv2.threshold(gray,1,255,cv2.THRESH_BINARY_INV)
+                    #contours = cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+                    #cnt = contours[0]
+                    #x,y,w,h = cv2.boundingRect(cnt)
+                    #crop = crop[y-1:y+h+1,x-1:x+w+1]
+                    cv2.imwrite(monFile,crop)
+                    
+                    
 
         _monList = myList = ','.join(map(str, monList))
         dbWrapper = DbWrapper(str(args.db_method), str(args.dbip), args.dbport, args.dbusername, args.dbpassword, args.dbname, args.timezone)

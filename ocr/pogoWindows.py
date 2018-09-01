@@ -165,9 +165,9 @@ class PogoWindows:
         log.debug("lookForButton: Determined screenshot scale: " + str(height) + " x " + str(width))
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
         edges = cv2.Canny(gray, 100, 200, apertureSize=3)
-        maxLineLength = width / ratio + width * 0.07
+        maxLineLength = width / ratio + width * 0.05
         log.debug("lookForButton: MaxLineLength:" + str(maxLineLength))
-        minLineLength = width / ratio - width * 0.07
+        minLineLength = width / ratio - width * 0.05
         log.debug("lookForButton: MinLineLength:" + str(minLineLength))
         
         kernel = np.ones((4,4),np.uint8)
@@ -201,8 +201,8 @@ class PogoWindows:
             log.debug("lookForButton: minmiddledist: " + str(minmiddledist))
             if minmiddledist:
                 log.debug("lookForButton: Check Y-cord of button")
-                if disToMiddleMin - ((height / 25) - 5) <= minmiddledist <= disToMiddleMin + (
-                        (height / 25) + 5):
+                if disToMiddleMin - ((height / 25) - 20) <= minmiddledist <= disToMiddleMin + (
+                        (height / 25) + 20):
                     log.debug("lookForButton: Button found")
                     return True
                 else:
@@ -348,16 +348,16 @@ class PogoWindows:
             log.info('Raidscreen not running but nearby open')
             posRaids = self.resolutionCalculator.getNearbyRaidTabClick()
             self.screenWrapper.click(posRaids.x, posRaids.y)
-            time.sleep(.5)
+            time.sleep(2)
             return False
 
         log.info('Raidscreen not running...')
         posNearby = self.resolutionCalculator.getNearbyClick()
         self.screenWrapper.click(posNearby.x, posNearby.y)
-        time.sleep(.5)
+        time.sleep(1)
         posRaids = self.resolutionCalculator.getNearbyRaidTabClick()
         self.screenWrapper.click(posRaids.x, posRaids.y)
-        time.sleep(.5)
+        time.sleep(2)
         return False
 
     def checkGameQuitPopup(self, filename, hash):

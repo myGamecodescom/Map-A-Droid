@@ -23,6 +23,8 @@ from screenWrapper import ScreenWrapper
 from ocr.pogoWindows import PogoWindows
 import collections
 
+import cv2
+from PIL import Image
 
 RaidLocation = collections.namedtuple('RaidLocation', ['latitude', 'longitude'])
 
@@ -84,6 +86,8 @@ runWarningThreadEvent = Event()
 windowLock = Lock()
 lastScreenshotTaken = 0
 lastPogoRestart = None
+lastScreenHash = '0'
+lastScreenHashCount = 0
 
 dbWrapper = DbWrapper(str(args.db_method), str(args.dbip), args.dbport, args.dbusername, args.dbpassword, args.dbname,
                       args.timezone)
@@ -345,10 +349,10 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
     global lastScreenshotTaken
 
     log.debug("getToRaidscreen: Trying to get to the raidscreen with %s max attempts..." % str(maxAttempts))
-
     log.info("getToRaidscreen: Attempting to retrieve screenshot before checking windows")
     # check if last screenshot is way too old to be of use...
     # log.fatal(lastScreenshotTaken)
+    
     compareToTime = time.time() - lastScreenshotTaken
     if not lastScreenshotTaken or compareToTime > 1:
         log.info("getToRaidscreen: last screenshot too old, getting a new one")
@@ -370,6 +374,7 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
             # maybe send email? :D
         else:
             lastScreenshotTaken = time.time()
+
     if pogoWindowManager.isGpsSignalLost('screenshot.png', 123):
         log.warning("getToRaidscreen: GPS signal error. Restarting pogo -_-\"")
         restartPogo()
@@ -387,37 +392,45 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
             return False
         # not using continue since we need to get a screen before the next round...
         found = pogoWindowManager.checkSpeedwarning('screenshot.png', 123)
+        if found:
+            log.info("getToRaidscreen: Found Speedwarning button")
+            found = True
+            time.sleep(.5)
         if checkAll:
             # also check for login and stuff...
             if not found and pogoWindowManager.checkPostLoginOkButton('screenshot.png', 123):
                 log.info("getToRaidscreen: Found post-login OK button")
                 found = True
-                time.sleep(0.5)
+                time.sleep(.5)
             if not found and pogoWindowManager.checkPostLoginNewsMessage('screenshot.png', 123):
                 log.info("getToRaidscreen: Found post login news message")
                 found = True
-                time.sleep(0.5)
+                time.sleep(.5)
         if not found and pogoWindowManager.checkCloseExceptNearbyButton('screenshot.png', 123):
             log.info("getToRaidscreen: Found (X) button (except nearby)")
             found = True
-            time.sleep(0.5)
+            time.sleep(.5)
         if not found and pogoWindowManager.checkWeatherWarning('screenshot.png', 123):
             log.info("getToRaidscreen: Found weather warning")
             found = True
-            time.sleep(0.5)
+            time.sleep(.5)
         if not found and pogoWindowManager.checkGameQuitPopup('screenshot.png', 123):
             log.info("getToRaidscreen: Found game quit popup")
             found = True
-            time.sleep(0.5)
+            time.sleep(.5)
 
         log.info("getToRaidscreen: Previous checks found popups: %s" % str(found))
         if not found:
             log.info("getToRaidscreen: Previous checks found nothing. Checking nearby open")
-            pogoWindowManager.checkNearby('screenshot.png', 123)
+            if pogoWindowManager.checkNearby('screenshot.png', 123):
+                log.debug("getToRaidscreen: done")
+                return True
 
-        time.sleep(0.5)
+        log.info("getToRaidscreen: Waiting %s seconds befor taking screenshot" % str(args.post_screenshot_delay))
+        time.sleep(args.post_screenshot_delay)
         if screenWrapper.getScreenshot('screenshot.png'):
             lastScreenshotTaken = time.time()
+            time.sleep(args.post_screenshot_delay)
         else:
             log.error("getToRaidscreen: Failed getting screenshot while checking windows")
             return False
@@ -481,7 +494,7 @@ def checkSpeedWeatherWarningThread():
             log.debug("checkSpeedWeatherWarningThread: did not reach raidscreen in 4 attempts")
         log.debug("checkSpeedWeatherWarningThread: releasing lock")
         windowLock.release()
-        time.sleep(args.post_teleport_delay)
+        
 
 
 def main_thread():
@@ -494,6 +507,8 @@ def main_thread():
     global windowLock
     global screenWrapper
     global lastScreenshotTaken
+    global lastScreenHash
+    global lastScreenHashCount
 
     log.info("main: Starting TelnetGeo Client")
     telnGeo = TelnetGeo(str(args.tel_ip), args.tel_port, str(args.tel_password), args.tel_timeout_command,
@@ -629,7 +644,7 @@ def main_thread():
             #    tabOutAndInPogo()
             #    screenWrapper.getScreenshot('screenshot.png')
             #    reopenedRaidTab = True
-
+            
             if args.last_scanned:
                 log.info('main: Set new scannedlocation in Database')
                 dbWrapper.setScannedLocation(str(curLat), str(curLng), str(curTime))
@@ -649,16 +664,73 @@ def main_thread():
         #            emptycount = 0
         #            log.error("Had 30 empty scans, restarting pogo")
         #            restartPogo()
-            log.debug("main: countOfRaids: %s" % str(countOfRaids))
-            if countOfRaids > 0:
-                curTime = time.time()
-                copyfile('screenshot.png', args.raidscreen_path
-                    + '/raidscreen_' + str(curTime) + "_" + str(curLat) + "_"
-                    + str(curLng) + "_" + str(countOfRaids) + '.png')
+        
+            log.debug("main: Checking Screenhash")
+            screenHash = getImageHash('screenshot.png')
+            log.debug("main: Old Hash: " + lastScreenHash)
+            log.debug("main: New Hash: " + screenHash)
+            if hamming_distance(str(lastScreenHash), str(screenHash)) < 4 and lastScreenHash <> '0':
+                log.debug("main: New und last Screenshoot are the same - no processing")
+                lastScreenHashCount += 1
+                log.debug("main: Same Screen Count: " + str(lastScreenHashCount))
+                if lastScreenHashCount >= 100:
+                    lastScreenHashCount = 0
+                    restartPogo()
+            else: 
+                lastScreenHash = screenHash
+                lastScreenHashCount = 0       
+                if countOfRaids > 0:
+                    log.debug("main: New und last Screenshoot are different - starting OCR")
+                    log.debug("main: countOfRaids: %s" % str(countOfRaids))
+                    curTime = time.time()
+                    copyFileName = args.raidscreen_path + '/raidscreen_' + str(curTime) + "_" + str(curLat) + "_" + str(curLng) + "_" + str(countOfRaids) + '.png'
+                    log.debug('Copying file: ' + copyFileName)
+                    copyfile('screenshot.png', copyFileName)
+                else:
+                    log.info('main: No Raids found or active')
+
             log.debug("main: Releasing lock")
             windowLock.release()
 
+def dhash(image, hash_size = 8):
+            # Grayscale and shrink the image in one step.
+    image = image.convert('L').resize(
+        (hash_size + 1, hash_size),
+        Image.ANTIALIAS,
+    )
+    pixels = list(image.getdata())
+    # Compare adjacent pixels.
+    difference = []
+    for row in xrange(hash_size):
+        for col in xrange(hash_size):
+            pixel_left = image.getpixel((col, row))
+            pixel_right = image.getpixel((col + 1, row))
+            difference.append(pixel_left > pixel_right)
+    # Convert the binary array to a hexadecimal string.
+        decimal_value = 0
+        hex_string = []
+        for index, value in enumerate(difference):
+            if value:
+                decimal_value += 2**(index % 8)
+            if (index % 8) == 7:
+                hex_string.append(hex(decimal_value)[2:].rjust(2, '0'))
+                decimal_value = 0
+    hashValue = ''.join(hex_string)
+    return hashValue
 
+def getImageHash(image, hashSize=8):
+
+    hashPic = Image.open(image)
+    imageHash = dhash(hashPic, hashSize)
+    return imageHash
+
+def hamming_distance(str1, str2):
+    diffs = 0
+    for ch1, ch2 in zip(str1, str2):
+        if ch1 != ch2:
+            diffs += 1
+    return diffs
+    
 def observer(scrPath, width, height):
         observer = Observer()
         observer.schedule(checkScreenshot(width, height), path=scrPath)

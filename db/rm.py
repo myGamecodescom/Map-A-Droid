@@ -267,8 +267,8 @@ class RmWrapper:
                 log.info("Inserting mon without egg")
                 start = end - 45 * 60
                 query = (
-                    'INSERT INTO raid (gym_id, level, spawn, start, end, pokemon_id, last_scanned) '
-                    'VALUES (%s, %s, FROM_UNIXTIME(%s), FROM_UNIXTIME(%s), FROM_UNIXTIME(%s), %s, FROM_UNIXTIME(%s))')
+                    'INSERT INTO raid (gym_id, level, spawn, start, end, pokemon_id, last_scanned, cp, move_1, move_2) '
+                    'VALUES (%s, %s, FROM_UNIXTIME(%s), FROM_UNIXTIME(%s), FROM_UNIXTIME(%s), %s, FROM_UNIXTIME(%s), 999, 1, 1)')
                 data = (gym, lvl, captureTime, start, end, pkm, int(time.time()))
             elif end is None or start is None:
                 log.info("Inserting without end or start")
@@ -279,8 +279,8 @@ class RmWrapper:
                 # we have start and end, mon is either with egg or we're submitting an egg
                 log.info("Inserting everything")
                 query = (
-                    'INSERT INTO raid (gym_id, level, spawn, start, end, pokemon_id, last_scanned) '
-                    'VALUES (%s, %s, FROM_UNIXTIME(%s), FROM_UNIXTIME(%s), FROM_UNIXTIME(%s), %s, FROM_UNIXTIME(%s))')
+                    'INSERT INTO raid (gym_id, level, spawn, start, end, pokemon_id, last_scanned, cp, move_1, move_2) '
+                    'VALUES (%s, %s, FROM_UNIXTIME(%s), FROM_UNIXTIME(%s), FROM_UNIXTIME(%s), %s, FROM_UNIXTIME(%s), 999, 1, 1)')
                 data = (gym, lvl, captureTime, start, end, pkm, int(time.time()))
 
             cursorIns = connection.cursor()

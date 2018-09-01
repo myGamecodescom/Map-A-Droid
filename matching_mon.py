@@ -33,7 +33,7 @@ def mon_image_matching(url_img_name, fort_img_name, raidNo, hash):
     (tH, tW) = crop.shape[:2]
     
     fort_img = cv2.blur(fort_img,(3,3))
-    fort_img = cv2.Canny(fort_img, 400, 100)
+    fort_img = cv2.Canny(fort_img, 50, 100)
 
     found = None
     for scale in np.linspace(0.9,2, 10)[::-1]:
@@ -48,7 +48,7 @@ def mon_image_matching(url_img_name, fort_img_name, raidNo, hash):
         (_, maxVal, _, maxLoc) = cv2.minMaxLoc(result)
         
         (endX, endY) = (int((maxLoc[0] + tW) * r), int((maxLoc[1] + tH) * r))
-        if endY < height_f/2 or endX < width_f/2:
+        if endY < height_f/2 or endX < width_f/2 or endY > height_f/2+height_f/2*0.4 or endY < height_f/2+height_f/2*0.3:
             maxVal = 0.0
         
         log.info('[Crop: ' + str(raidNo) + ' (' + str(hash) +') ] ' + 'Filename: ' + str(url_img_name) + ' Matchvalue: ' + str(maxVal) + ' Scale: ' + str(scale))

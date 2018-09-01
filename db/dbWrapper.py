@@ -35,8 +35,8 @@ class DbWrapper:
     def insertHash(self, imghash, type, id, raidNo):
         return self.__dbWrapperUsed.insertHash(imghash, type, id, raidNo)
 
-    def deleteHashTable(self, ids, type):
-        return self.__dbWrapperUsed.deleteHashTable(ids, type)
+    def deleteHashTable(self, ids, type, mode=' not in '):
+        return self.__dbWrapperUsed.deleteHashTable(ids, type, mode)
 
     def submitRaid(self, gym, pkm, lvl, start, end, type, raidNo, captureTime, MonWithNoEgg=False):
         return self.__dbWrapperUsed.submitRaid(gym, pkm, lvl, start, end, type, raidNo, captureTime, MonWithNoEgg)
@@ -55,6 +55,9 @@ class DbWrapper:
 
     def getNearGyms(self, lat, lng, hash, raidNo):
         return self.__dbWrapperUsed.getNearGyms(lat, lng, hash, raidNo)
+        
+    def checkGymsNearby(self, lat, lng, hash, raidNo, gymId):
+        return self.__dbWrapperUsed.checkGymsNearby(lat, lng, hash, raidNo, gymId)
 
     def setScannedLocation(self, lat, lng, captureTime):
         return self.__dbWrapperUsed.setScannedLocation(lat, lng, captureTime)

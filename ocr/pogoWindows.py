@@ -165,10 +165,14 @@ class PogoWindows:
         log.debug("lookForButton: Determined screenshot scale: " + str(height) + " x " + str(width))
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
         edges = cv2.Canny(gray, 100, 200, apertureSize=3)
-        maxLineLength = width / ratio + 15
+        maxLineLength = width / ratio + width * 0.07
         log.debug("lookForButton: MaxLineLength:" + str(maxLineLength))
-        minLineLength = width / ratio - 25
+        minLineLength = width / ratio - width * 0.07
         log.debug("lookForButton: MinLineLength:" + str(minLineLength))
+        
+        kernel = np.ones((4,4),np.uint8)
+        edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+        
         maxLineGap = 50
         lineCount = 0
         lines = []
@@ -223,11 +227,12 @@ class PogoWindows:
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
         log.debug("__checkRaidLine: Determined screenshot scale: " + str(height) + " x " + str(width))
         edges = cv2.Canny(gray, 50, 150, apertureSize=3)
-        maxLineLength = width / 3.30 + 30
+        maxLineLength = width / 3.30 + width * 0.03
         log.debug("__checkRaidLine: MaxLineLength:" + str(maxLineLength))
-        minLineLength = width / 3.30 - 30
+        minLineLength = width / 3.30 - width * 0.03
         log.debug("__checkRaidLine: MinLineLength:" + str(minLineLength))
         maxLineGap = 50
+        
         lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 100, minLineLength, maxLineGap)
         if lines is None:
             return False

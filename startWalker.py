@@ -105,6 +105,8 @@ def main():
     log.info("Parsing arguments")
     args = parseArgs()
     set_log_and_verbosity(log)
+    
+    dbWrapper.createHashDatabaseIfNotExists()
 
     if args.clean_hash_database:
         log.info('Cleanup Hash Database')
@@ -131,8 +133,6 @@ def main():
         if not dbWrapper.ensureLastUpdatedColumn():
             log.fatal("Missing raids.last_updated column and couldn't create it")
             sys.exit(1)
-
-        dbWrapper.createHashDatabaseIfNotExists()
 
         log.info('Starting OCR Thread....')
         t_observ = Thread(name='observer', target=observer(args.raidscreen_path, args.screen_width, args.screen_height))
@@ -436,7 +436,7 @@ def turnScreenOnAndStartPogo():
         time.sleep(args.post_turn_screen_on_delay)
     # check if pogo is running and start it if necessary
     log.warning("turnScreenOnAndStartPogo: (Re-)Starting Pogo")
-    restartPogo()
+    #restartPogo()
 
 
 def reopenRaidTab():

@@ -161,7 +161,7 @@ class RmWrapper:
         connection.close()
         return True
 
-    def deleteHashTable(self, ids, type):
+    def deleteHashTable(self, ids, type, mode):
         log.debug('Deleting old Hashes of type %s' % type)
         log.debug('Valid ids: %s' % ids)
         try:
@@ -173,7 +173,7 @@ class RmWrapper:
             return False
         cursor = connection.cursor()
         query = (' DELETE FROM trshash ' +
-                 ' where id not in (' + ids + ') ' +
+                 ' where id ' + mode + ' (' + ids + ') ' +
                  ' and type like \'%' + type + '%\'')
         log.debug(query)
         cursor.execute(query)
@@ -185,7 +185,12 @@ class RmWrapper:
 
     def submitRaid(self, gym, pkm, lvl, start, end, type, raidNo, captureTime, MonWithNoEgg=False):
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) + ') ] ' + 'submitRaid: Submitting raid')
-
+        
+        if self.raidExist(gym, type, raidNo, pkm):
+            self.refreshTimes(gym, raidNo, captureTime)
+            log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'submitRaid: %s already submitted - ignoring' % str(type))
+            return False
+        
         try:
             connection = mysql.connector.connect(host=self.host,
                                                  user=self.user, port=self.port, passwd=self.password,
@@ -218,8 +223,8 @@ class RmWrapper:
             start = end - 45 * 60
             log.info("Updating mon without egg")
             setStr = 'SET level = %s, spawn = FROM_UNIXTIME(%s), start = FROM_UNIXTIME(%s), end = FROM_UNIXTIME(%s), ' \
-                     'pokemon_id = %s, last_scanned = FROM_UNIXTIME(%s) '
-            data = (lvl, captureTime, start, end, pkm, int(time.time()))
+                     'pokemon_id = %s, last_scanned = FROM_UNIXTIME(%s), cp = %s, move_1 = %s, move_2 = %s '
+            data = (lvl, captureTime, start, end, pkm, int(time.time()), '999', '1', '1')
 
             # send out a webhook - this case should only occur once...
             wh_send = True
@@ -228,8 +233,8 @@ class RmWrapper:
         elif end is None or start is None:
             # no end or start time given, just update anything there is
             log.info("Updating without end- or starttime - we should've seen the egg before")
-            setStr = 'SET level = %s, pokemon_id = %s, last_scanned = FROM_UNIXTIME(%s) '
-            data = (lvl, pkm, int(time.time()))
+            setStr = 'SET level = %s, pokemon_id = %s, last_scanned = FROM_UNIXTIME(%s), cp = %s, move_1 = %s, move_2 = %s'
+            data = (lvl, pkm, int(time.time()), '999', '1', '1')
 
             foundEndTime, EndTime = self.getRaidEndtime(gym, raidNo)
             if foundEndTime:
@@ -244,8 +249,9 @@ class RmWrapper:
             # we have start and end, mon is either with egg or we're submitting an egg
             setStr = 'SET level = %s, spawn = FROM_UNIXTIME(%s), start = FROM_UNIXTIME(%s), end = FROM_UNIXTIME(%s), ' \
                      'pokemon_id = %s, ' \
-                     'last_scanned = FROM_UNIXTIME(%s) '
-            data = (lvl, captureTime, start, end, pkm, int(time.time()))
+                     'last_scanned = FROM_UNIXTIME(%s), cp = %s, move_1 = %s, move_2 = %s '
+            data = (lvl, captureTime, start, end, pkm, int(time.time()), '999', '1', '1')
+            
 
         query = updateStr + setStr + whereStr
         log.debug(query % data)
@@ -502,6 +508,44 @@ class RmWrapper:
         cursor.close()
         connection.close()
         return data
+        
+    def checkGymsNearby(self, lat, lng, hash, raidNo, gymId):
+        try:
+            connection = mysql.connector.connect(host=self.host,
+                                                 user=self.user, port=self.port, passwd=self.password,
+                                                 db=self.database)
+        except:
+            log.error("Could not connect to the SQL database")
+            return []
+        cursor = connection.cursor()
+        # query = (' SELECT start, latitude, longitude FROM raid LEFT JOIN gym ' +
+        #    'ON raid.gym_id = gym.gym_id WHERE raid.start >= \'%s\''
+        #    % str(datetime.datetime.now() - datetime.timedelta(hours = self.timezone)))
+
+        query = ('SELECT ' +
+                 ' gym_id, ( ' +
+                 ' 6371 * acos ( ' +
+                 ' cos ( radians( \'' + str(lat) + '\' ) ) ' +
+                 ' * cos( radians( latitude ) ) ' +
+                 ' * cos( radians( longitude ) - radians( \'' + str(lng) + '\' ) ) ' +
+                 ' + sin ( radians( \'' + str(lat) + '\' ) ) ' +
+                 ' * sin( radians( latitude ) ) ' +
+                 ' ) ' +
+                 ' ) AS distance ' +
+                 ' FROM gym ' +
+                 ' HAVING distance <= 2 and gym_id=\'' + str(gymId) + '\'')
+
+        cursor.execute(query)
+        data = cursor.fetchall()
+        number_of_rows = cursor.rowcount
+        if number_of_rows > 0:
+            log.debug('[Crop: ' + str(raidNo) + ' (' + str(
+                self.uniqueHash) + ') ] ' + 'checkGymsNearby: GymHash seems to be correct')
+            return True
+        else:
+            log.debug('[Crop: ' + str(raidNo) + ' (' + str(
+                self.uniqueHash) + ') ] ' + 'checkGymsNearby: GymHash seems not to be correct')
+            return False
 
     def setScannedLocation(self, lat, lng, captureTime):
 

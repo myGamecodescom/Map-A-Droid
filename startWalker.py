@@ -359,9 +359,7 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
         # log.error("compareToTime: %s" % str(compareToTime))
         # log.error("delayUsed: %s" % str(delayUsed))
         log.info("getToRaidscreen: Attempting to retrieve screenshot checking windows")
-        log.info("getToRaidscreen: Waiting %s seconds befor taking screenshot" % str(args.post_screenshot_delay))
 
-        time.sleep(args.post_screenshot_delay)
         if not screenWrapper.getScreenshot('screenshot.png'):
             log.error("getToRaidscreen: Failed retrieving screenshot before checking windows")
             if not again:
@@ -426,11 +424,10 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
                 log.debug("getToRaidscreen: done")
                 return True
 
-        log.info("getToRaidscreen: Waiting %s seconds befor taking screenshot" % str(args.post_screenshot_delay))
+        log.info("getToRaidscreen: Waiting %s seconds before taking screenshot" % str(args.post_screenshot_delay))
         time.sleep(args.post_screenshot_delay)
         if screenWrapper.getScreenshot('screenshot.png'):
             lastScreenshotTaken = time.time()
-            time.sleep(args.post_screenshot_delay)
         else:
             log.error("getToRaidscreen: Failed getting screenshot while checking windows")
             return False
@@ -486,7 +483,7 @@ def checkSpeedWeatherWarningThread():
             log.warning("checkSpeedWeatherWarningThread: Starting Pogo")
             restartPogo()
             windowLock.release()
-            return
+            continue
         reachedRaidscreen = getToRaidscreen(4, True)
         if reachedRaidscreen:
             log.debug("checkSpeedWeatherWarningThread: checkSpeedWeatherWarningThread: reached raidscreen...")

@@ -220,6 +220,8 @@ class PogoWindows:
         if leftSide:
             log.debug("__checkRaidLine: Check nearby open ")
         screenshotRead = cv2.imread(filename)
+        if screenshotRead is None:
+            return False
         height, width, _ = screenshotRead.shape
         screenshotRead = screenshotRead[int(height / 2) - int(height / 3):int(height / 2) + int(height / 3),
                          int(0):int(width)]

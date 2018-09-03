@@ -175,7 +175,7 @@ class Scanner:
         
         raidlevel = raidpic[230:260, 0:170]
         imgray = cv2.cvtColor(raidlevel, cv2.COLOR_BGR2GRAY)
-        imgray = cv2.GaussianBlur(imgray, (7, 7), 2)
+        imgray = cv2.GaussianBlur(imgray, (9, 9), 2)
         ret, thresh = cv2.threshold(imgray, 220, 255,0)
         (_, contours, _) = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
         

@@ -667,7 +667,7 @@ def main_thread():
             log.debug("main: Old Hash: " + lastScreenHash)
             log.debug("main: New Hash: " + screenHash)
             if hamming_distance(str(lastScreenHash), str(screenHash)) < 4 and lastScreenHash <> '0':
-                log.debug("main: New und last Screenshoot are the same - no processing")
+                log.debug("main: New und old Screenshoot are the same - no processing")
                 lastScreenHashCount += 1
                 log.debug("main: Same Screen Count: " + str(lastScreenHashCount))
                 if lastScreenHashCount >= 100:
@@ -677,7 +677,7 @@ def main_thread():
                 lastScreenHash = screenHash
                 lastScreenHashCount = 0       
                 if countOfRaids > 0:
-                    log.debug("main: New und last Screenshoot are different - starting OCR")
+                    log.debug("main: New und old Screenshoot are different - starting OCR")
                     log.debug("main: countOfRaids: %s" % str(countOfRaids))
                     curTime = time.time()
                     copyFileName = args.raidscreen_path + '/raidscreen_' + str(curTime) + "_" + str(curLat) + "_" + str(curLng) + "_" + str(countOfRaids) + '.png'
@@ -685,13 +685,7 @@ def main_thread():
                     copyfile('screenshot.png', copyFileName)
                 else:
                     log.info('main: No Raids found or active')
-
-            log.debug("main: countOfRaids: %s" % str(countOfRaids))
-            if countOfRaids > 0:
-                curTime = time.time()
-                copyfile('screenshot.png', args.raidscreen_path
-                    + '/raidscreen_' + str(curTime) + "_" + str(curLat) + "_"
-                    + str(curLng) + "_" + str(countOfRaids) + '.png')
+            
             log.debug("main: Releasing lock")
             windowLock.release()
 

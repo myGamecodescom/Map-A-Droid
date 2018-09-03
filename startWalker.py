@@ -666,7 +666,7 @@ def main_thread():
             screenHash = getImageHash('screenshot.png')
             log.debug("main: Old Hash: " + lastScreenHash)
             log.debug("main: New Hash: " + screenHash)
-            if hamming_distance(str(lastScreenHash), str(screenHash)) < 4 and lastScreenHash <> '0':
+            if hamming_distance(str(lastScreenHash), str(screenHash)) < 7 and lastScreenHash != '0':
                 log.debug("main: New und old Screenshoot are the same - no processing")
                 lastScreenHashCount += 1
                 log.debug("main: Same Screen Count: " + str(lastScreenHashCount))
@@ -684,6 +684,7 @@ def main_thread():
                     log.debug('Copying file: ' + copyFileName)
                     copyfile('screenshot.png', copyFileName)
                 else:
+                    log.debug("main: New und old Screenshoot are different - starting OCR")
                     log.info('main: No Raids found or active')
             
             log.debug("main: Releasing lock")

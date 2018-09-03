@@ -347,7 +347,9 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
     global lastScreenshotTaken
 
     log.debug("getToRaidscreen: Trying to get to the raidscreen with %s max attempts..." % str(maxAttempts))
-
+    pogoTopmost = telnMore.isPogoTopmost()
+    if not pogoTopmost:
+        return False
     log.info("getToRaidscreen: Attempting to retrieve screenshot before checking windows")
     # check if last screenshot is way too old to be of use...
     # log.fatal(lastScreenshotTaken)

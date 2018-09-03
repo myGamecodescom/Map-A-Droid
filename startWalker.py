@@ -361,7 +361,7 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
         log.info("getToRaidscreen: Attempting to retrieve screenshot checking windows")
         log.info("getToRaidscreen: Waiting %s seconds befor taking screenshot" % str(args.post_screenshot_delay))
 
-        time.sleep(args.post_screenshot_delay)
+        #time.sleep(args.post_screenshot_delay)
         if not screenWrapper.getScreenshot('screenshot.png'):
             log.error("getToRaidscreen: Failed retrieving screenshot before checking windows")
             if not again:

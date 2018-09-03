@@ -58,8 +58,11 @@ class TelnetMore:
             data, sender = s.recvfrom(4096)
             return data
         except (socket.timeout, AttributeError, OSError):
+            log.warning("Socket, Attribute or OSError")
+            self.__close_socket(s)
             return b''
         except: #attribute, conn reset etc etc
+            log.warning("Other error trying to receive data")
             self.__close_socket(s)
             return b''
 
@@ -88,6 +91,7 @@ class TelnetMore:
             attempts = attempts + 1
             time.sleep(0.5)
             if attempts > 100:
+                log.error("Could not connect to the image socket in 100 attempts")
                 self.__close_socket(s)
                 return False
 
@@ -96,6 +100,7 @@ class TelnetMore:
         try:
             values = struct.unpack(">I", bytearray(data))
         except:
+            log.warning("Could not unpack %s" % str(data))
             self.__close_socket(s)
             return False
         sizeToReceive = int(values[0])
@@ -103,6 +108,7 @@ class TelnetMore:
         while sizeToReceive >= sys.getsizeof(image):
             received = self.__read(s)
             if received == b'':
+                log.warning("Received empty line")
                 return False
             image = image + received
 

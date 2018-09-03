@@ -53,9 +53,10 @@ class Scanner:
             log.info('Unknow directory created')
             os.makedirs(self.unknownPath)
 
-    def detectRaidTime(self, raidpic, hash, raidNo):
+    def detectRaidTime(self, raidpic, hash, raidNo, radius):
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'detectRaidTime: Reading Raidtimer')
-        raidtimer = raidpic[200:230, 30:150]
+        height, width, channel = raidpic.shape
+        raidtimer = raidpic[int(round(radius*2*0.03)+(2*radius)+(radius*2*0.28)):int(round(radius*2*0.03)+(2*radius)+(radius*2*0.43)), 0:width]
         raidtimer = cv2.resize(raidtimer, (0,0), fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         emptyRaidTempPath = os.path.join(self.tempPath, str(raidNo) + str(hash) + '_emptyraid.png')
         cv2.imwrite(emptyRaidTempPath, raidtimer)
@@ -89,9 +90,10 @@ class Scanner:
         else:
             return (raidFound, False, False, False)
 
-    def detectRaidEndtimer(self, raidpic, hash, raidNo):
+    def detectRaidEndtimer(self, raidpic, hash, raidNo, radius):
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'detectRaidEndtimer: Reading Raidtimer')
-        raidtimer = raidpic[178:200, 45:130]
+        height, width, channel = raidpic.shape
+        raidtimer = raidpic[int(round(radius*2*0.03)+(2*radius)+(radius*2*0.08)):int(round(radius*2*0.03)+(2*radius)+(radius*2*0.23)), 0:width]
         raidtimer = cv2.resize(raidtimer, (0,0), fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         emptyRaidTempPath = os.path.join(self.tempPath, str(raidNo) + str(hash) + '_endraid.png')
         cv2.imwrite(emptyRaidTempPath, raidtimer)
@@ -167,13 +169,15 @@ class Scanner:
         os.remove(picName)
         return False, picName
 
-    def detectLevel(self, raidpic, hash, raidNo):
+    def detectLevel(self, raidpic, hash, raidNo, radius):
         foundlvl = None
         lvl = None
         
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'Scanning Level')
-        
-        raidlevel = raidpic[230:260, 0:170]
+        height, width, channel = raidpic.shape
+        raidlevel = raidpic[int(round(radius*2*0.03)+(2*radius)+(radius*2*0.43)):int(round(radius*2*0.03)+(2*radius)+(radius*2*0.68)), 0:width]
+        raidlevel = cv2.resize(raidlevel, (0,0), fx=0.5, fy=0.5) 
+
         imgray = cv2.cvtColor(raidlevel, cv2.COLOR_BGR2GRAY)
         imgray = cv2.GaussianBlur(imgray, (9, 9), 2)
         ret, thresh = cv2.threshold(imgray, 220, 255,0)
@@ -363,11 +367,11 @@ class Scanner:
         hashJson = json.dumps({'gym': gym, 'lvl': lvl, 'mon': mon, 'lvl': lvl}, separators=(',',':'))
         return hashJson
 
-    def cropImage(self, image, raidNo):
+    def cropImage(self, image, raidNo, radius):
         gray=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
         output = image.copy()
         image_cols, image_rows, _ = image.shape
-        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT,2,image_cols,param1=100,param2=15,minRadius=71,maxRadius=71)
+        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT,2,image_cols,param1=100,param2=15,minRadius=radius,maxRadius=radius)
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
             for (x, y, r) in circles:
@@ -376,22 +380,7 @@ class Scanner:
                         return new_crop
         return False
 
-
-    def resize(image, width = None, height = None, inter = cv2.INTER_AREA):
-        dim = None
-        (h, w) = image.shape[:2]
-        if width is None and height is None:
-            return image
-        if width is None:
-            r = height / float(h)
-            dim = (int(w * r), height)
-        else:
-            r = width / float(w)
-            dim = (width, int(h * r))
-        resized = cv2.resize(image, dim, interpolation = inter)
-        return resized
-
-    def start_detect(self, filenameOfCrop, hash, raidNo, captureTime, captureLat, captureLng, orgFileName):
+    def start_detect(self, filenameOfCrop, hash, raidNo, captureTime, captureLat, captureLng, orgFileName, radius):
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Starting detection of crop')
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Original Filename: ' + str(orgFileName))
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Original Lat: ' + str(captureLat))
@@ -407,23 +396,26 @@ class Scanner:
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Starting analysis of ID %s' % str(hash))
         origCrop = cv2.imread(filenameOfCrop)
 
-        img_temp = Image.open(filenameOfCrop)
-        hpercent = (270/float(img_temp.size[1]))
-        wsize = int((float(img_temp.size[0])*float(hpercent)))
-        img_temp = img_temp.resize((wsize,270), Image.ANTIALIAS)
-        img_temp.save(filenameOfCrop)
+        
 
         img = cv2.imread(filenameOfCrop,3)
 
-        raidhash = img[0:175, 0:170]
-        raidhash = self.cropImage(raidhash, raidNo)
+        raidhash = self.cropImage(img, raidNo, radius)
 
         raidhashPic = os.path.join(self.tempPath, str(hash) + "_raidhash" + str(raidNo) +".jpg")
         cv2.imwrite(raidhashPic, raidhash)
+        
+        img_temp = Image.open(raidhashPic)
+        hpercent = (146/float(img_temp.size[1]))
+        wsize = int((float(img_temp.size[0])*float(hpercent)))
+        img_temp = img_temp.resize((wsize,146), Image.ANTIALIAS)
+        img_temp.save(raidhashPic)
+
 
         #get (raidstart, raidend, raidtimer) as (timestamp, timestamp, human-readable hatch)
-        raidtimer = self.detectRaidTime(img, hash, raidNo)
+        raidtimer = self.detectRaidTime(img, hash, raidNo, radius)
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Got raidtime %s' % (str(raidtimer)))
+
         #first item in tuple stands for raid present in crop or not
         if (not raidtimer[0]):
             #there is no raid, stop analysis of crop, abandon ship
@@ -445,7 +437,8 @@ class Scanner:
             return False
 
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Creating Hash overall')
-        raidHash = self.imageHashExists(raidhashPic, False, 'raid', raidNo)
+        raidHash = None
+        #self.imageHashExists(raidhashPic, False, 'raid', raidNo)
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: detectRaidHash: ' + str(raidHash))
 
         if raidHash:
@@ -472,7 +465,7 @@ class Scanner:
             else:
                 self.dbWrapper.deleteHashTable('\'' + str(raidHash) + '\'', 'raid', 'in')
 
-        raidlevel = self.detectLevel(img, hash, raidNo) #we need the raid level to make the possible set of mons smaller
+        raidlevel = self.detectLevel(img, hash, raidNo, radius) #we need the raid level to make the possible set of mons smaller
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Determined raidlevel to be %s' % (str(raidlevel)))
 
         if raidlevel is None:
@@ -531,7 +524,7 @@ class Scanner:
             log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Checking for Endtime')
             if not self.dbWrapper.readRaidEndtime(str(gymId), raidNo):
                 log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: No existing Egg found')
-                raidend = self.detectRaidEndtimer(img, hash, raidNo)
+                raidend = self.detectRaidEndtimer(img, hash, raidNo, radius)
                 if raidend[1]:
                     log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Submitting mon without egg. ID: %s, gymId: %s' % (str(monFound[0]), str(gymId)))
                     submitStatus = self.dbWrapper.submitRaid(str(gymId), monFound[0], raidlevel, None, raidend[2], 'MON', raidNo, captureTime, True)

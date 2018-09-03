@@ -124,7 +124,7 @@ def main():
     MonRaidImages.runAll(args.pogoasset)
 
     if not args.only_ocr:
-        log.info('Starting Scanning Thread....')
+        log.info('Processing Pokemon Matching....')
         t = Thread(target=main_thread, name='main')
         t.daemon = True
         t.start()

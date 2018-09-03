@@ -226,6 +226,7 @@ class RmWrapper:
                      'pokemon_id = %s, last_scanned = FROM_UNIXTIME(%s), cp = %s, move_1 = %s, move_2 = %s '
             data = (lvl, captureTime, start, end, pkm, int(time.time()), '999', '1', '1')
 
+
             # send out a webhook - this case should only occur once...
             wh_send = True
             wh_start = start
@@ -253,6 +254,11 @@ class RmWrapper:
             data = (lvl, captureTime, start, end, pkm, int(time.time()), '999', '1', '1')
             
 
+            wh_send = True
+            wh_start = start
+            wh_end = end
+
+
         query = updateStr + setStr + whereStr
         log.debug(query % data)
         cursor.execute(query, data)
@@ -261,7 +267,7 @@ class RmWrapper:
         cursor.close()
         if affectedRows == 0 and not eggHatched:
             # we need to insert the raid...
-            log.info("Gotta insert")
+            log.info("Got to insert")
             if MonWithNoEgg:
                 # submit mon without egg info -> we have an endtime
                 log.info("Inserting mon without egg")

@@ -540,6 +540,41 @@ class MonocleWrapper:
         connection.commit()
         return data
 
+    def checkGymsNearby(self, lat, lng, hash, raidNo, gymId):
+        try:
+            connection = mysql.connector.connect(host=self.host,
+                                                 user=self.user, port=self.port, passwd=self.password,
+                                                 db=self.database)
+        except:
+            log.error("Could not connect to the SQL database")
+            return []
+        cursor = connection.cursor()
+
+        query = ('SELECT ' +
+                 ' id, ( ' +
+                 ' 6371 * acos ( ' +
+                 ' cos ( radians( \'' + str(lat) + '\' ) ) ' +
+                 ' * cos( radians( lat ) ) ' +
+                 ' * cos( radians( lon ) - radians( \'' + str(lng) + '\' ) ) ' +
+                 ' + sin ( radians( \'' + str(lat) + '\' ) ) ' +
+                 ' * sin( radians( lat ) ) ' +
+                 ' ) ' +
+                 ' ) AS distance ' +
+                 ' FROM forts ' +
+                 ' HAVING distance <= 2 and id=\'' + str(gym) + '\'')
+
+        cursor.execute(query)
+        data = cursor.fetchall()
+        number_of_rows = cursor.rowcount
+        if number_of_rows > 0:
+            log.debug('[Crop: ' + str(raidNo) + ' (' + str(
+                self.uniqueHash) + ') ] ' + 'checkGymsNearby: GymHash seems to be correct')
+            return True
+        else:
+            log.debug('[Crop: ' + str(raidNo) + ' (' + str(
+                self.uniqueHash) + ') ] ' + 'checkGymsNearby: GymHash seems not to be correct')
+            return False
+
     def setScannedLocation(self, lat, lng, captureTime):
         log.debug('setScannedLocation: not possible with monocle')
         return True

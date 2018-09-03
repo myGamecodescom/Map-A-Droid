@@ -82,9 +82,24 @@ class TelnetMore:
         elif len(encoded) < 500 and "KO: " in encoded:
             log.error("getScreenshot: Could not retrieve screenshot. Check if mediaprojection is enabled!")
             return False
-        # fh = open(path, "wb")
-        # fh.write(encoded.decode('base64'))
-        # fh.close()
+        elif not "OK:" in encoded:
+            log.error("getScreenshot: response not OK")
+            return False
+        elif not "size:" in encoded:
+            log.error("getScreenshot: won't be able to read a size, aborting")
+            return False
+        # extract the length of the image from encoded
+        # first split by ',', then by ':'
+        keyVals = encoded.split(',')
+        size = 0
+        for key in keyVals:
+            if "size:" in key:
+                size = int(key.split(':')[1])
+                break;
+        if size == 0:
+            log.error("getScreenshot: invalid size")
+            return False
+
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         attempts = 0
         while not self.__connectImageSocket(s):
@@ -94,17 +109,9 @@ class TelnetMore:
                 log.error("Could not connect to the image socket in 100 attempts")
                 self.__close_socket(s)
                 return False
-
-        data = self.__read(s)
+            
+        sizeToReceive = size
         image = self.__read(s)
-        try:
-            values = struct.unpack(">I", bytearray(data))
-        except:
-            log.warning("Could not unpack %s" % str(data))
-            self.__close_socket(s)
-            return False
-        sizeToReceive = int(values[0])
-
         while sizeToReceive >= sys.getsizeof(image):
             received = self.__read(s)
             if received == b'':

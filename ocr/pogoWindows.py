@@ -84,7 +84,8 @@ class PogoWindows:
             return True
 
         if col is None:
-            return False
+            log.error("Screenshot corrupted :(")
+            return True
         bounds = None
         bounds = self.resolutionCalculator.getGpsErrorBounds()
 
@@ -116,6 +117,11 @@ class PogoWindows:
         except:
             log.error("Screenshot corrupted :(")
             return -1
+
+        if screenshotRead is None:
+            log.error("Screenshot corrupted :(")
+            return -1
+
         height, width, _ = screenshotRead.shape
         
         if crop:
@@ -176,6 +182,11 @@ class PogoWindows:
         except:
             log.error("Screenshot corrupted :(")
             return False
+
+        if screenshotRead is None:
+            log.error("Screenshot corrupted :(")
+            return False
+
         height, width, _ = screenshotRead.shape
         log.debug("lookForButton: Determined screenshot scale: " + str(height) + " x " + str(width))
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
@@ -238,8 +249,9 @@ class PogoWindows:
             screenshotRead = cv2.imread(filename)
         except:
             log.error("Screenshot corrupted :(")
-            return True
+            return False
         if screenshotRead is None:
+            log.error("Screenshot corrupted :(")
             return False
         height, width, _ = screenshotRead.shape
         screenshotRead = screenshotRead[int(height / 2) - int(height / 3):int(height / 2) + int(height / 3),
@@ -289,6 +301,10 @@ class PogoWindows:
         except:
             log.error("Screenshot corrupted :(")
             return False
+        if image is None:
+            log.error("Screenshot corrupted :(")
+            return False
+
         height, width, _ = image.shape
         image = image[int(height / 2 - (height / 3)):int(height / 2 + (height / 3)), 0:int(width)]
         cv2.imwrite(os.path.join(self.tempDirPath, str(hash) + '_AmountOfRaids.jpg'), image)
@@ -324,6 +340,10 @@ class PogoWindows:
         try:
             col = cv2.imread(filename)
         except:
+            log.error("Screenshot corrupted :(")
+            return False
+
+        if col is None:
             log.error("Screenshot corrupted :(")
             return False
         bounds = self.resolutionCalculator.getNearbyRaidTabBounds()
@@ -450,11 +470,11 @@ class PogoWindows:
 
         try:
             image = cv2.imread(filename)
+            height, width, _ = image.shape
         except:
             log.error("Screenshot corrupted :(")
             return False
-        height, width, _ = image.shape
-        
+
         cv2.imwrite(os.path.join(self.tempDirPath, str(hash) + '_exitcircle.jpg'), image)
              
         if self.__readCircleCount(os.path.join(self.tempDirPath, str(hash) + '_exitcircle.jpg'), hash, float(radiusratio), Xcord, True) > 0:

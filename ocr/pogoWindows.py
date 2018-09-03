@@ -77,7 +77,14 @@ class PogoWindows:
             return None
 
         log.debug("isGpsSignalLost: checking for red bar")
-        col = cv2.imread(filename)
+        try:
+            col = cv2.imread(filename)
+        except:
+            log.error("Screenshot corrupted :(")
+            return True
+
+        if col is None:
+            return False
         bounds = None
         bounds = self.resolutionCalculator.getGpsErrorBounds()
 
@@ -104,7 +111,11 @@ class PogoWindows:
     def __readCircleCount(self,filename,hash,ratio, xcord = False, crop = False):
         log.debug("__readCircleCount: Reading circles")
 
-        screenshotRead = cv2.imread(filename)
+        try:
+            screenshotRead = cv2.imread(filename)
+        except:
+            log.error("Screenshot corrupted :(")
+            return -1
         height, width, _ = screenshotRead.shape
         
         if crop:
@@ -159,8 +170,12 @@ class PogoWindows:
     def __lookForButton(self, filename, ratio, minmiddledist=False, max=False):
         log.debug("lookForButton: Reading lines")
         disToMiddleMin = None
-        screenshotRead = cv2.imread(filename)
-        gray = cv2.cvtColor(screenshotRead, cv2.COLOR_BGR2GRAY)
+        try:
+            screenshotRead = cv2.imread(filename)
+            gray = cv2.cvtColor(screenshotRead, cv2.COLOR_BGR2GRAY)
+        except:
+            log.error("Screenshot corrupted :(")
+            return False
         height, width, _ = screenshotRead.shape
         log.debug("lookForButton: Determined screenshot scale: " + str(height) + " x " + str(width))
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
@@ -219,7 +234,11 @@ class PogoWindows:
         log.debug("__checkRaidLine: Reading lines")
         if leftSide:
             log.debug("__checkRaidLine: Check nearby open ")
-        screenshotRead = cv2.imread(filename)
+        try:
+            screenshotRead = cv2.imread(filename)
+        except:
+            log.error("Screenshot corrupted :(")
+            return True
         if screenshotRead is None:
             return False
         height, width, _ = screenshotRead.shape
@@ -265,7 +284,11 @@ class PogoWindows:
 
         log.debug("readAmountOfRaidsCircle: Cropping circle")
 
-        image = cv2.imread(filename)
+        try:
+            image = cv2.imread(filename)
+        except:
+            log.error("Screenshot corrupted :(")
+            return False
         height, width, _ = image.shape
         image = image[int(height / 2 - (height / 3)):int(height / 2 + (height / 3)), 0:int(width)]
         cv2.imwrite(os.path.join(self.tempDirPath, str(hash) + '_AmountOfRaids.jpg'), image)
@@ -298,7 +321,11 @@ class PogoWindows:
             return False
 
         log.debug('__checkRaidTabOnScreen: Checking for raidscreen ...')
-        col = cv2.imread(filename)
+        try:
+            col = cv2.imread(filename)
+        except:
+            log.error("Screenshot corrupted :(")
+            return False
         bounds = self.resolutionCalculator.getNearbyRaidTabBounds()
         log.debug("__checkRaidTabOnScreen: Bounds %s" % str(bounds))
         raidtimer = col[bounds.top:bounds.bottom, bounds.left:bounds.right]
@@ -421,7 +448,11 @@ class PogoWindows:
             log.warning("__checkClosePresent: %s does not exist" % str(filename))
             return False
 
-        image = cv2.imread(filename)
+        try:
+            image = cv2.imread(filename)
+        except:
+            log.error("Screenshot corrupted :(")
+            return False
         height, width, _ = image.shape
         
         cv2.imwrite(os.path.join(self.tempDirPath, str(hash) + '_exitcircle.jpg'), image)

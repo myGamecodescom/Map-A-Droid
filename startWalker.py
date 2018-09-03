@@ -128,15 +128,13 @@ def main():
         t = Thread(target=main_thread, name='main')
         t.daemon = True
         t.start()
-        log.info('Starting speedweatherWarning Thread....')
-        w = Thread(target=checkSpeedWeatherWarningThread, name='speedWeatherCheck')
-        w.daemon = True
-        w.start()
 
     if not args.only_scan:
         if not dbWrapper.ensureLastUpdatedColumn():
             log.fatal("Missing raids.last_updated column and couldn't create it")
             sys.exit(1)
+
+        dbWrapper.createHashDatabaseIfNotExists()
 
         log.info('Starting OCR Thread....')
         t_observ = Thread(name='observer', target=observer(args.raidscreen_path, args.screen_width, args.screen_height))
@@ -349,17 +347,19 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
     global lastScreenshotTaken
 
     log.debug("getToRaidscreen: Trying to get to the raidscreen with %s max attempts..." % str(maxAttempts))
+
     log.info("getToRaidscreen: Attempting to retrieve screenshot before checking windows")
     # check if last screenshot is way too old to be of use...
     # log.fatal(lastScreenshotTaken)
-    
     compareToTime = time.time() - lastScreenshotTaken
     if not lastScreenshotTaken or compareToTime > 1:
         log.info("getToRaidscreen: last screenshot too old, getting a new one")
         # log.error("compareToTime: %s" % str(compareToTime))
         # log.error("delayUsed: %s" % str(delayUsed))
         log.info("getToRaidscreen: Attempting to retrieve screenshot checking windows")
+        log.info("getToRaidscreen: Waiting %s seconds befor taking screenshot" % str(args.post_screenshot_delay))
 
+        time.sleep(args.post_screenshot_delay)
         if not screenWrapper.getScreenshot('screenshot.png'):
             log.error("getToRaidscreen: Failed retrieving screenshot before checking windows")
             if not again:
@@ -373,49 +373,54 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
         else:
             lastScreenshotTaken = time.time()
 
-    if pogoWindowManager.isGpsSignalLost('screenshot.png', 123):
-        log.warning("getToRaidscreen: GPS signal error. Restarting pogo -_-\"")
-        restartPogo()
-        if not screenWrapper.getScreenshot('screenshot.png'):
-            log.error("getToRaidscreen: Failed retrieving screenshot before checking windows")
-            return False
-        else:
-            lastScreenshotTaken = time.time()
-
     attempts = 0
+    redErrorCount = 0
     while not pogoWindowManager.checkRaidscreen('screenshot.png', 123):
         if attempts > maxAttempts:
             # could not reach raidtab in given maxAttempts
             log.error("getToRaidscreen: Could not get to raidtab within %s attempts" % str(maxAttempts))
             return False
+
+        if pogoWindowManager.isGpsSignalLost('screenshot.png', 123):
+            log.warning("getToRaidscreen: GPS signal error")
+            redErrorCount += 1
+            if redErrorCount > 3:
+                log.error("getToRaidscreen: Red error multiple times in a row, restarting")
+                restartPogo()
+            if not screenWrapper.getScreenshot('screenshot.png'):
+                log.error("getToRaidscreen: Failed retrieving screenshot before checking windows")
+                return False
+            else:
+                lastScreenshotTaken = time.time()
+            time.sleep(1)
+            continue
         # not using continue since we need to get a screen before the next round...
         found = pogoWindowManager.checkSpeedwarning('screenshot.png', 123)
         if found:
             log.info("getToRaidscreen: Found Speedwarning button")
-            found = True
-            time.sleep(.5)
+            time.sleep(0.5)
         if checkAll:
             # also check for login and stuff...
             if not found and pogoWindowManager.checkPostLoginOkButton('screenshot.png', 123):
                 log.info("getToRaidscreen: Found post-login OK button")
                 found = True
-                time.sleep(.5)
+                time.sleep(0.5)
             if not found and pogoWindowManager.checkPostLoginNewsMessage('screenshot.png', 123):
                 log.info("getToRaidscreen: Found post login news message")
                 found = True
-                time.sleep(.5)
+                time.sleep(0.5)
         if not found and pogoWindowManager.checkCloseExceptNearbyButton('screenshot.png', 123):
             log.info("getToRaidscreen: Found (X) button (except nearby)")
             found = True
-            time.sleep(.5)
+            time.sleep(0.5)
         if not found and pogoWindowManager.checkWeatherWarning('screenshot.png', 123):
             log.info("getToRaidscreen: Found weather warning")
             found = True
-            time.sleep(.5)
+            time.sleep(0.5)
         if not found and pogoWindowManager.checkGameQuitPopup('screenshot.png', 123):
             log.info("getToRaidscreen: Found game quit popup")
             found = True
-            time.sleep(.5)
+            time.sleep(0.5)
 
         log.info("getToRaidscreen: Previous checks found popups: %s" % str(found))
         if not found:
@@ -446,7 +451,7 @@ def turnScreenOnAndStartPogo():
         time.sleep(args.post_turn_screen_on_delay)
     # check if pogo is running and start it if necessary
     log.warning("turnScreenOnAndStartPogo: (Re-)Starting Pogo")
-    #restartPogo()
+    restartPogo()
 
 
 def reopenRaidTab():
@@ -473,7 +478,7 @@ def checkSpeedWeatherWarningThread():
     global windowLock
     global telnMore
     while True:
-        while sleep or not runWarningThreadEvent.isSet():
+        while sleep:
             time.sleep(0.5)
         log.debug("checkSpeedWeatherWarningThread: acquiring lock")
         windowLock.acquire()
@@ -482,16 +487,16 @@ def checkSpeedWeatherWarningThread():
         if not telnMore.isPogoTopmost():
             log.warning("checkSpeedWeatherWarningThread: Starting Pogo")
             restartPogo()
-            windowLock.release()
-            continue
-        reachedRaidscreen = getToRaidscreen(4, True)
+        reachedRaidscreen = getToRaidscreen(10, True)
         if reachedRaidscreen:
             log.debug("checkSpeedWeatherWarningThread: checkSpeedWeatherWarningThread: reached raidscreen...")
+            runWarningThreadEvent.set()
         else:
-            log.debug("checkSpeedWeatherWarningThread: did not reach raidscreen in 4 attempts")
+            log.debug("checkSpeedWeatherWarningThread: did not reach raidscreen in 10 attempts")
+            runWarningThreadEvent.clear()
         log.debug("checkSpeedWeatherWarningThread: releasing lock")
         windowLock.release()
-        
+        time.sleep(1)
 
 
 def main_thread():
@@ -527,6 +532,11 @@ def main_thread():
 
     if not sleep:
         turnScreenOnAndStartPogo()
+
+    log.info('Starting speedweatherWarning Thread....')
+    w = Thread(target=checkSpeedWeatherWarningThread, name='speedWeatherCheck')
+    w.daemon = True
+    w.start()
 
     emptycount = 0
     locationCount = 0
@@ -610,45 +620,33 @@ def main_thread():
             # ok, we should be at the next gym, check for errors and stuff
             # TODO: improve errorhandling by checking results and trying again and again
             # not using continue to always take a new screenshot...
-            log.debug("main: Clearing event, acquiring lock")
-            runWarningThreadEvent.clear()
+            log.debug("main: Acquiring lock")
+
+            while sleep or not runWarningThreadEvent.isSet():
+                time.sleep(0.1)
             windowLock.acquire()
             log.debug("main: Lock acquired")
-            log.debug("main: Checking if pogo is running...")
-            if not telnMore.isPogoTopmost():
-                log.warning("main: Starting Pogo")
-                startPogo(False)
-                windowLock.release()
-                continue
+            # check if last screenshot is way too old to be of use...
+            # log.fatal(lastScreenshotTaken)
+            compareToTime = time.time() - lastScreenshotTaken
+            if not lastScreenshotTaken or compareToTime > 0.5:
+                log.info("main: last screenshot too old, getting a new one")
+                # log.error("compareToTime: %s" % str(compareToTime))
+                # log.error("delayUsed: %s" % str(delayUsed))
 
-            while not getToRaidscreen(12):
-                if failcount > 5:
-                    log.fatal("main: failed to find raidscreen way too often. Exiting")
-                    sys.exit(1)
-                failcount += 1
-                log.error("main: Failed to find the raidscreen multiple times in a row. Stopping pogo and taking a "
-                          "break of 5 minutes")
-                stopPogo()
-                time.sleep(300)
-                startPogo(False)
-            failcount = 0
+                if not screenWrapper.getScreenshot('screenshot.png'):
+                    log.error("main: Failed retrieving screenshot")
+                    # worst case: we don't have useful raidcrops
+                else:
+                    lastScreenshotTaken = time.time()
 
-            # well... we are on the raidtab, but we want to reopen it every now and then, so screw it
-            reopenedRaidTab = False
-            # if not egghatchLocation and math.fmod(i, 30) == 0:
-            #    log.warning("main: Closing and opening raidtab every 30 locations scanned... Doing so")
-            #    reopenRaidTab()
-            #    tabOutAndInPogo()
-            #    screenWrapper.getScreenshot('screenshot.png')
-            #    reopenedRaidTab = True
-            
             if args.last_scanned:
                 log.info('main: Set new scannedlocation in Database')
                 dbWrapper.setScannedLocation(str(curLat), str(curLng), str(curTime))
 
             log.info("main: Checking raidcount and copying raidscreen if raids present")
             countOfRaids = pogoWindowManager.readRaidCircles('screenshot.png', 123)
-            if countOfRaids == -1 and not reopenedRaidTab:
+            if countOfRaids == -1:
                 # reopen raidtab and take screenshot...
                 log.warning("main: Count present but no raid shown, reopening raidTab")
                 reopenRaidTab()
@@ -686,6 +684,12 @@ def main_thread():
                 else:
                     log.info('main: No Raids found or active')
 
+            log.debug("main: countOfRaids: %s" % str(countOfRaids))
+            if countOfRaids > 0:
+                curTime = time.time()
+                copyfile('screenshot.png', args.raidscreen_path
+                    + '/raidscreen_' + str(curTime) + "_" + str(curLat) + "_"
+                    + str(curLng) + "_" + str(countOfRaids) + '.png')
             log.debug("main: Releasing lock")
             windowLock.release()
 

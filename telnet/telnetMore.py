@@ -59,7 +59,7 @@ class TelnetMore:
             return data
         except (socket.timeout, AttributeError, OSError):
             return b''
-        except (AttributeError):
+        except: #attribute, conn reset etc etc
             self.__close_socket(s)
             return b''
 
@@ -103,7 +103,7 @@ class TelnetMore:
         while sizeToReceive >= sys.getsizeof(image):
             received = self.__read(s)
             if received == b'':
-                continue
+                return False
             image = image + received
 
         self.__close_socket(s)

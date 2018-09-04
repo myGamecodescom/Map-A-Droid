@@ -201,7 +201,7 @@ class MonocleWrapper:
         connection.commit()
         return True
 
-    def deleteHashTable(self, ids, type):
+    def deleteHashTable(self, ids, type, mode):
         log.debug('Deleting old Hashes of type %s' % type)
         log.debug('Valid ids: %s' % ids)
         try:
@@ -213,7 +213,7 @@ class MonocleWrapper:
             return False
         cursor = connection.cursor()
         query = (' DELETE FROM trshash ' +
-                 ' where id not in (' + ids + ') ' +
+                 ' where id ' + mode + ' (' + ids + ') ' +
                  ' and type like \'%' + type + '%\'')
         log.debug(query)
         cursor.execute(query)

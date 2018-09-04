@@ -397,17 +397,17 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
             time.sleep(1)
             continue
         # not using continue since we need to get a screen before the next round...
-        found = pogoWindowManager.checkSpeedwarning('screenshot.png', 123)
+        found = pogoWindowManager.lookForButton('screenshot.png', 1.60)
         if found:
-            log.info("getToRaidscreen: Found Speedwarning button")
-            time.sleep(0.5)
+            log.info("getToRaidscreen: Found Speed button")
+            time.sleep(2)
         if checkAll:
             # also check for login and stuff...
-            if not found and pogoWindowManager.checkPostLoginOkButton('screenshot.png', 123):
+            if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20):
                 log.info("getToRaidscreen: Found post-login OK button")
                 found = True
                 time.sleep(0.5)
-            if not found and pogoWindowManager.checkPostLoginNewsMessage('screenshot.png', 123):
+            if not found and pogoWindowManager.lookForButton('screenshot.png', 3.01):
                 log.info("getToRaidscreen: Found post login news message")
                 found = True
                 time.sleep(0.5)
@@ -415,11 +415,11 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
             log.info("getToRaidscreen: Found (X) button (except nearby)")
             found = True
             time.sleep(0.5)
-        if not found and pogoWindowManager.checkWeatherWarning('screenshot.png', 123):
+        if not found and pogoWindowManager.lookForButton('screenshot.png', 1.05):
             log.info("getToRaidscreen: Found weather warning")
             found = True
             time.sleep(0.5)
-        if not found and pogoWindowManager.checkGameQuitPopup('screenshot.png', 123):
+        if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20, True):
             log.info("getToRaidscreen: Found game quit popup")
             found = True
             time.sleep(0.5)
@@ -633,6 +633,7 @@ def main_thread():
             compareToTime = time.time() - lastScreenshotTaken
             if not lastScreenshotTaken or compareToTime > 0.5:
                 log.info("main: last screenshot too old, getting a new one")
+                time.sleep(3)
                 # log.error("compareToTime: %s" % str(compareToTime))
                 # log.error("delayUsed: %s" % str(delayUsed))
 

@@ -173,7 +173,7 @@ class PogoWindows:
         log.debug("readCircles: Determined screenshot to not contain raidcircles, but a raidcount!")
         return -1
 
-    def __lookForButton(self, filename, ratio, minmiddledist=False, max=False):
+    def lookForButton(self, filename, ratio, backclick = False):
         log.debug("lookForButton: Reading lines")
         disToMiddleMin = None
         try:
@@ -188,12 +188,18 @@ class PogoWindows:
             return False
 
         height, width, _ = screenshotRead.shape
+        _widthold = float(width)
         log.debug("lookForButton: Determined screenshot scale: " + str(height) + " x " + str(width))
-        gray = cv2.GaussianBlur(gray, (5, 5), 0)
+        
+        gray = cv2.resize(gray, (0,0), fx=width*0.001, fy=width*0.001)
+        height, width = gray.shape
+        faktor =  width / _widthold
+        
+        gray = cv2.GaussianBlur(gray, (3, 3), 0)
         edges = cv2.Canny(gray, 100, 200, apertureSize=3)
-        maxLineLength = width / ratio + width * 0.05
+        maxLineLength = (width / ratio) + (width*0.02)
         log.debug("lookForButton: MaxLineLength:" + str(maxLineLength))
-        minLineLength = width / ratio - width * 0.05
+        minLineLength = (width / ratio) - (width*0.02)
         log.debug("lookForButton: MinLineLength:" + str(minLineLength))
         
         kernel = np.ones((4,4),np.uint8)
@@ -202,6 +208,8 @@ class PogoWindows:
         maxLineGap = 50
         lineCount = 0
         lines = []
+        _x = 0
+        _y = height
         lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 160, maxLineGap, minLineLength)
         if lines is None:
             return False
@@ -209,37 +217,35 @@ class PogoWindows:
         for line in lines:
             for x1, y1, x2, y2 in line:
                 if y1 == y2 and (x2 - x1 <= maxLineLength) and (x2 - x1 >= minLineLength) and y1 > height / 2:
+                    
                     lineCount += 1
-                    disToMiddle = y1
-
-                    if not max:
-                        if disToMiddleMin is None or disToMiddle < disToMiddleMin:
-                            disToMiddleMin = disToMiddle
-                    else:
-                        if disToMiddleMin is None or disToMiddle > disToMiddleMin:
-                            disToMiddleMin = disToMiddle
-
+                    __y = y2
+                    __x1 = x1
+                    __x2 = x2
+                    if __y < _y:
+                        _y = __y
+                        _x1 = __x1
+                        _x2 = __x2
+                    
                     log.debug("lookForButton: Found Buttonline Nr. " + str(lineCount) + " - Line lenght: " + str(
                         x2 - x1) + "px Coords - X: " + str(x1) + " " + str(x2) + " Y: " + str(y1) + " " + str(y2))
 
         if lineCount >= 1:
-            log.debug("lookForButton: disToMiddleMin: " + str(disToMiddleMin))
-            log.debug("lookForButton: minmiddledist: " + str(minmiddledist))
-            if minmiddledist:
-                log.debug("lookForButton: Check Y-cord of button")
-                if disToMiddleMin - ((height / 25) - 20) <= minmiddledist <= disToMiddleMin + (
-                        (height / 25) + 20):
-                    log.debug("lookForButton: Button found")
-                    return True
-                else:
-                    log.debug("lookForButton: Button not found")
-                    return False
+            
+            if backclick:
+                log.debug('lookForButton: found any Button - do backclick') 
+                self.screenWrapper.backButton()
             else:
-                log.debug("lookForButton: Button found")
-                return True
-
-        log.debug("lookForButton: Button not found")
+                click_x = int(((width - _x2) + ((_x2 - _x1) /2)) / round(faktor,2)) 
+                click_y = int(_y / round(faktor,2) + height*0.03)
+                log.debug('lookForButton: found any Button - click on: %s %s' % (str(click_x), str(click_y)) )
+                self.screenWrapper.click(click_x, click_y)
+                
+            return True
+        
+        log.debug('lookForButton: did not found any Button')
         return False
+
 
     def __checkRaidLine(self, filename, hash, leftSide=False):
         log.debug("__checkRaidLine: Reading lines")

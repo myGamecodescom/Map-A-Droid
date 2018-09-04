@@ -496,7 +496,7 @@ class RmWrapper:
                  ' ) ' +
                  ' ) AS distance ' +
                  ' FROM gym ' +
-                 ' HAVING distance <= 2 ' +
+                 ' HAVING distance <= 200 ' +
                  ' ORDER BY distance')
 
         cursor.execute(query)
@@ -536,7 +536,7 @@ class RmWrapper:
                  ' ) ' +
                  ' ) AS distance ' +
                  ' FROM gym ' +
-                 ' HAVING distance <= 2 and gym_id=\'' + str(gym) + '\'')
+                 ' HAVING distance <= 200 and gym_id=\'' + str(gym) + '\'')
 
         cursor.execute(query)
         data = cursor.fetchall()

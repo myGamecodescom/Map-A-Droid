@@ -8,7 +8,7 @@ from PIL import Image
 
 log = logging.getLogger(__name__)
 
-def fort_image_matching(url_img_name, fort_img_name, zoom, value, raidNo, hash, x1=25, x2=50, y1=50, y2=80):
+def fort_image_matching(url_img_name, fort_img_name, zoom, value, raidNo, hash, radius= None, x1=0.30, x2=0.62, y1=0.62, y2=1.23):
     #log.debug("fort_image_matching: Reading url_img_name '%s'" % str(url_img_name))
     url_img = cv2.imread(url_img_name,3)
     if (url_img is None):
@@ -38,8 +38,15 @@ def fort_image_matching(url_img_name, fort_img_name, zoom, value, raidNo, hash, 
                 fort_img = fort_img[int((height_f/2)-(height_f/3)):int((height_f/2)+(height_f/3)), int(0):int(width_f)]
             else:
                 fort_img = fort_img[int(0):int(height_f), int((width_f/2)-(width_f/3)):int((width_f/2)+(width_f/3))]
+                
+                
+        x1 = int(round(radius*2*0.03)+(radius*x1))
+        x2 = int(round(radius*2*0.03)+(radius*x2))
+        y1 = int(round(radius*2*0.03)+(radius*y1))
+        y2 = int(round(radius*2*0.03)+(radius*y2))
 
         crop = url_img[int(y1):int(y2),int(x1):int(x2)]
+
         npValue=0.5
 
     else:

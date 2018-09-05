@@ -151,7 +151,7 @@ class MonocleWrapper:
                  'CONVERT((CONV(hash, 16, 10)), SIGNED) '
                  '^ CONVERT((CONV(\'' + str(imghash) + '\', 16, 10)), SIGNED)) as hamming_distance, '
                                                        'type FROM trshash '
-                                                       'HAVING hamming_distance < 4 and type = \'' + str(type) + '\' '
+                                                       'HAVING hamming_distance < 5 and type = \'' + str(type) + '\' '
                                                                                                                  'ORDER BY hamming_distance ASC')
 
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) + ') ] ' + 'checkForHash: ' + query)
@@ -540,7 +540,7 @@ class MonocleWrapper:
         connection.commit()
         return data
 
-    def checkGymsNearby(self, lat, lng, hash, raidNo, gymId):
+    def checkGymsNearby(self, lat, lng, hash, raidNo, gym):
         try:
             connection = mysql.connector.connect(host=self.host,
                                                  user=self.user, port=self.port, passwd=self.password,

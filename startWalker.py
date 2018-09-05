@@ -377,6 +377,9 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
 
     attempts = 0
     redErrorCount = 0
+    if not os.path.isfile('screenshot.png'):
+        log.error("getToRaidscreen: Failed retrieving screenshot... Restarting")
+        return False
     while not pogoWindowManager.checkRaidscreen('screenshot.png', 123):
         if attempts > maxAttempts:
             # could not reach raidtab in given maxAttempts
@@ -399,30 +402,28 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
         # not using continue since we need to get a screen before the next round...
         found = pogoWindowManager.lookForButton('screenshot.png', 1.60)
         if found:
-            log.info("getToRaidscreen: Found Speed button")
-            time.sleep(2)
-        if checkAll:
+            log.info("getToRaidscreen: Found button")
+        #if checkAll:
             # also check for login and stuff...
-            if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20):
-                log.info("getToRaidscreen: Found post-login OK button")
-                found = True
-                time.sleep(0.5)
-            if not found and pogoWindowManager.lookForButton('screenshot.png', 3.01):
-                log.info("getToRaidscreen: Found post login news message")
-                found = True
-                time.sleep(0.5)
+            #if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20):
+            #    log.info("getToRaidscreen: Found post-login OK button")
+            #    found = True
+            #    time.sleep(0.5)
+            #if not found and pogoWindowManager.lookForButton('screenshot.png', 3.01):
+            #    log.info("getToRaidscreen: Found post login news message")
+            #    found = True
+            #    time.sleep(0.5)
         if not found and pogoWindowManager.checkCloseExceptNearbyButton('screenshot.png', 123):
             log.info("getToRaidscreen: Found (X) button (except nearby)")
             found = True
-            time.sleep(0.5)
-        if not found and pogoWindowManager.lookForButton('screenshot.png', 1.05):
-            log.info("getToRaidscreen: Found weather warning")
-            found = True
-            time.sleep(0.5)
-        if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20, True):
-            log.info("getToRaidscreen: Found game quit popup")
-            found = True
-            time.sleep(0.5)
+        #if not found and pogoWindowManager.lookForButton('screenshot.png', 1.05):
+        #    log.info("getToRaidscreen: Found weather warning")
+        #    found = True
+        #    time.sleep(0.5)
+        #if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20, True):
+        #    log.info("getToRaidscreen: Found game quit popup")
+        #    found = True
+        #    time.sleep(0.5)
 
         log.info("getToRaidscreen: Previous checks found popups: %s" % str(found))
         if not found:
@@ -462,15 +463,8 @@ def reopenRaidTab():
     if not screenWrapper.getScreenshot('screenshot.png'):
         log.error("reopenRaidTab: Failed retrieving screenshot before checking for closebutton")
         return
-    if pogoWindowManager.isOtherCloseButtonPresent('screenshot.png', 123):
-        screenWrapper.backButton()
-        log.debug("reopenRaidTab: Closebutton was present, checking raidscreen...")
-        # telnMore.clearAppCache("com.nianticlabs.pokemongo")
-        # time.sleep(1)
-        # screenWrapper.getScreenshot('screenshot.png')
-        # pogoWindowManager.checkRaidscreen('screenshot.png', 123)
-        getToRaidscreen(3)
-        time.sleep(1)
+    getToRaidscreen(3)
+    time.sleep(1)
 
 
 # supposed to be running mostly in the post walk/teleport delays...
@@ -684,6 +678,7 @@ def main_thread():
                     copyFileName = args.raidscreen_path + '/raidscreen_' + str(curTime) + "_" + str(curLat) + "_" + str(curLng) + "_" + str(countOfRaids) + '.png'
                     log.debug('Copying file: ' + copyFileName)
                     copyfile('screenshot.png', copyFileName)
+                    os.remove('screenshot.png')
                 else:
                     log.debug("main: New und old Screenshoot are different - starting OCR")
                     log.info('main: No Raids found or active')
@@ -718,6 +713,15 @@ def dhash(image, hash_size = 8):
     return hashValue
 
 def getImageHash(image, hashSize=8):
+    
+    try:
+        image_temp = cv2.imread(image)
+    except:
+        log.error("Screenshot corrupted :(")
+        return '0'
+    if image_temp is None:
+        log.error("Screenshot corrupted :(")
+        return '0'
 
     hashPic = Image.open(image)
     imageHash = dhash(hashPic, hashSize)

@@ -72,7 +72,7 @@ class Scanner:
         if raidFound:
             if ':' in raidtimer:
                 log.info('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'detectRaidTime: found raidtimer %s' % raidtimer)
-                hatchTime = self.getHatchTime(raidtimer, hash)
+                hatchTime = self.getHatchTime(raidtimer, raidNo)
 
                 if hatchTime:
                     log.info('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'detectRaidTime: Hatchtime %s' % str(hatchTime))
@@ -102,7 +102,7 @@ class Scanner:
         bw = gray.point(lambda x: 0 if x<200 else 255, '1')
 
 
-        raidtimer = pytesseract.image_to_string(bw, config='--psm 6 --oem 3').replace(' ', '').replace('~','').replace('o','0').replace('O','0').replace('-','').replace('.',':').replace('B','8').replace('A','4').replace('—','')
+        raidtimer = pytesseract.image_to_string(bw, config='--psm 6 --oem 3').replace(' ', '').replace('~','').replace('o','0').replace('O','0').replace('-','').replace('.',':').replace('B','8').replace('A','4').replace('—','').replace('_','')
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'detectRaidEndtimer: Raid-End-Text: ' + str(raidtimer))
 
         os.remove(emptyRaidTempPath)
@@ -439,9 +439,16 @@ class Scanner:
                     log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Found egg level %s starting at %s and ending at %s. GymID: %s' % (lvl, raidstart, raidend, gym))
                     self.dbWrapper.submitRaid(str(gym), None, lvl, raidstart, raidend, 'EGG', raidNo, captureTime)
                 else:
-                    log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Found Raidhash with an mon - fast submit')
-                    log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Submitting mon. ID: %s, gymId: %s' % (str(mon), str(gym)))
-                    self.dbWrapper.submitRaid(str(gym), mon, lvl, None, None, 'MON', raidNo, captureTime)
+                    
+                    raidend = self.detectRaidEndtimer(img, hash, raidNo, radius)
+                    if raidend[1]:
+                        log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Found Raidhash with an mon and endtime - fast submit')
+                        log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Submitting mon. ID: %s, gymId: %s' % (str(mon), str(gym)))
+                        self.dbWrapper.submitRaid(str(gym), mon, lvl, None, raidend[2], 'MON', raidNo, captureTime)
+                    else:
+                        log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Found Raidhash with an mon - fast submit')
+                        log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Submitting mon. ID: %s, gymId: %s' % (str(mon), str(gym)))
+                        self.dbWrapper.submitRaid(str(gym), mon, lvl, None, None, 'MON', raidNo, captureTime)
                 os.remove(filenameOfCrop)
                 os.remove(raidhashPic)
                 log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Finished')

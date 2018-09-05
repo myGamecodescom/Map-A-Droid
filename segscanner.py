@@ -12,8 +12,6 @@ import logging
 from walkerArgs import parseArgs
 from skimage.measure import compare_ssim as ssim
 import glob, os
-import mysql
-import mysql.connector
 import imutils
 from db.dbWrapper import DbWrapper
 import json

@@ -39,6 +39,9 @@ def get_raid_boss_cp(mon_id):
         with open('pokemon.json') as j:
             pokemon_file = json.load(j)
 
+        log.debug("Removing leading zero from string where necessary")
+        mon_id = int(mon_id)
+
         if 'cp' in pokemon_file[str(mon_id)]:
             log.debug("CP found for pokemon_id: " + str(mon_id) + " with the value of " + str(pokemon_file[str(mon_id)]["cp"]))
             return pokemon_file[str(mon_id)]["cp"]

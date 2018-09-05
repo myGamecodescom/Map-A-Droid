@@ -3916,6 +3916,7 @@
   "315":{
     "name": "Roselia",
     "rarity":"",
+    "cp":10887,
     "types": [
       {
         "type": "Grass",

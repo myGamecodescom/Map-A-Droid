@@ -523,7 +523,7 @@ class MonocleWrapper:
                  ' ) ' +
                  ' ) AS distance ' +
                  ' FROM forts ' +
-                 ' HAVING distance <= 2 ' +
+                 ' HAVING distance <= 200 ' +
                  ' ORDER BY distance')
 
         cursor.execute(query)
@@ -561,7 +561,7 @@ class MonocleWrapper:
                  ' ) ' +
                  ' ) AS distance ' +
                  ' FROM forts ' +
-                 ' HAVING distance <= 2 and id=\'' + str(gym) + '\'')
+                 ' HAVING distance <= 200 and id=\'' + str(gym) + '\'')
 
         cursor.execute(query)
         data = cursor.fetchall()

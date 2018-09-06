@@ -28,6 +28,34 @@ class MonocleWrapper:
         self.timezone = timezone
         self.uniqueHash = uniqueHash
 
+    def autoHatchEggs(self):
+        try:
+            connection = mysql.connector.connect(host=self.host,
+                                                 user=self.user, port=self.port, passwd=self.password,
+                                                 db=self.database)
+        except:
+            log.error("Could not connect to the SQL database")
+            return False
+
+        mon_id = args.auto_hatch_mon_id
+
+        query = "UPDATE raids SET pokemon_id = {0} " \
+                "WHERE time_battle >= {1} AND time_end <= {1} AND level = 5 AND pokemon_id <> {0}" \
+            .format(mon_id, int(time.time()))
+
+        cursor = connection.cursor()
+        log.debug(query)
+        cursor.execute(query)
+        affected_rows = cursor.rowcount
+        connection.commit()
+        cursor.close()
+
+        log.info("{0} gym(s) were updated as part of the regular level 5 egg hatching checks".format(affected_rows))
+
+        if (affected_rows > 0):
+            print('do stuff')
+            ## TODO TRIGGER THE WEBHOOK - THAT WILL BE FUN...I GUESS JUST EXTRACT ROWS, LOOP THROUGH EACH AND THEN SEND TO send_webhook()
+
     def __checkLastUpdatedColumnExists(self):
         try:
             connection = mysql.connector.connect(host=self.host,

@@ -152,13 +152,24 @@ def main():
 
     if args.sleeptimer:
         log.info('Starting Sleeptimer....')
-        t_sleeptimer = Thread(name='sleeptimer', target=sleeptimer(args.sleepinterval))
+        t_sleeptimer = Thread(name='sleeptimer', target=sleeptimer(args.sleepinterval)) ## TODO Add support back for user choice
         t_sleeptimer.daemon = True
         t_sleeptimer.start()
+
+    if args.auto_hatch:
+        log.info('Starting Auto Hatch....')
+        t_auto_hatch = Thread(name='level_5_auto_hatch', target=level_5_auto_hatch)
+        t_auto_hatch.daemon = True
+        t_auto_hatch.start()
 
     while True:
         time.sleep(10)
 
+
+def level_5_auto_hatch():
+    if sleep is not True and args.auto_hatch:
+        DbWrapper.autoHatchEggs()
+        time.sleep(60)
 
 def deleteOldScreens(folderscreen, foldersuccess, minutes):
     if minutes == "0":

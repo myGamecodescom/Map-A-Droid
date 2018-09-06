@@ -20,6 +20,9 @@ class DbWrapper:
         else:
             return self.__dbWrapperUsed.ensureLastUpdatedColumn()
 
+    def autoHatchEggs(self):
+        return self.__dbWrapperUsed.autoHatchEggs()
+
     def dbTimeStringToUnixTimestamp(self, timestring):
         return self.__dbWrapperUsed.dbTimeStringToUnixTimestamp(timestring)
 

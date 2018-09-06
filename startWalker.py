@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+import datetime
 from threading import Thread, Event, Lock
 import logging
 from colorlog import ColoredFormatter
@@ -37,6 +37,7 @@ class LogFilter(logging.Filter):
     def filter(self, record):
         return record.levelno < self.level
 
+
 console = logging.StreamHandler()
 args = parseArgs()
 sleep = False
@@ -59,7 +60,7 @@ formatter = ColoredFormatter(
     },
     secondary_log_colors={},
     style='%'
-    )
+)
 
 console.setFormatter(formatter)
 
@@ -81,7 +82,7 @@ log.addHandler(stderr_hdlr)
 
 telnMore = None
 pogoWindowManager = None
-screenWrapper =  None
+screenWrapper = None
 runWarningThreadEvent = Event()
 windowLock = Lock()
 lastScreenshotTaken = 0
@@ -94,9 +95,11 @@ dbWrapper = DbWrapper(str(args.db_method), str(args.dbip), args.dbport, args.dbu
 
 if not args.only_ocr:
     log.info("Starting Telnet MORE Client")
-    telnMore = TelnetMore(str(args.tel_ip), args.tel_port, str(args.tel_password), args.tel_timeout_command, args.tel_timeout_socket)
+    telnMore = TelnetMore(str(args.tel_ip), args.tel_port, str(args.tel_password), args.tel_timeout_command,
+                          args.tel_timeout_socket)
     log.info("Starting ScreenWrapper")
-    screenWrapper = ScreenWrapper(args.screen_method, telnMore, str(args.vnc_ip), args.vnc_port, args.vnc_password, args.vncscreen)
+    screenWrapper = ScreenWrapper(args.screen_method, telnMore, str(args.vnc_ip), args.vnc_port, args.vnc_password,
+                                  args.vncscreen)
 
     log.info("Starting pogo window manager")
     pogoWindowManager = PogoWindows(screenWrapper, args.screen_width, args.screen_height, args.temp_path)
@@ -109,7 +112,7 @@ def main():
     log.info("Parsing arguments")
     args = parseArgs()
     set_log_and_verbosity(log)
-    
+
     dbWrapper.createHashDatabaseIfNotExists()
 
     if args.clean_hash_database:
@@ -142,7 +145,8 @@ def main():
         t_observ.start()
 
         log.info('Starting Cleanup Thread....')
-        t_observ = Thread(name='cleanupraidscreen', target=deleteOldScreens(args.raidscreen_path, args.successsave_path, args.cleanup_age))
+        t_observ = Thread(name='cleanupraidscreen',
+                          target=deleteOldScreens(args.raidscreen_path, args.successsave_path, args.cleanup_age))
         t_observ.daemon = True
         t_observ.start()
 
@@ -169,9 +173,9 @@ def deleteOldScreens(folderscreen, foldersuccess, minutes):
 
         log.debug('deleteOldScreens: Cleanup Folder: ' + str(folderscreen))
         for file in os.listdir(folderscreen):
-            file_full_path = os.path.join(folderscreen,file)
+            file_full_path = os.path.join(folderscreen, file)
             if os.path.isfile(file_full_path) and file.endswith(".png"):
-                #Delete files older than x days
+                # Delete files older than x days
                 if os.stat(file_full_path).st_mtime < now - int(minutes) * 60:
                     os.remove(file_full_path)
                     log.debug('deleteOldScreens: File Removed : ' + file_full_path)
@@ -184,9 +188,9 @@ def deleteOldScreens(folderscreen, foldersuccess, minutes):
 
             log.debug('deleteOldScreens: Cleanup Folder: ' + str(foldersuccess))
             for file in os.listdir(foldersuccess):
-                file_full_path = os.path.join(foldersuccess,file)
+                file_full_path = os.path.join(foldersuccess, file)
                 if os.path.isfile(file_full_path) and file.endswith(".jpg"):
-                    #Delete files older than x days
+                    # Delete files older than x days
                     if os.stat(file_full_path).st_mtime < now - int(minutes) * 60:
                         os.remove(file_full_path)
                         log.debug('deleteOldScreens: File Removed : ' + file_full_path)
@@ -198,17 +202,20 @@ def deleteOldScreens(folderscreen, foldersuccess, minutes):
 def sleeptimer(sleeptime):
     global sleep
     global telnMore
-    tmFrom = datetime.datetime.strptime(sleeptime[0],"%H:%M")
+    tmFrom = datetime.datetime.strptime(sleeptime[0], "%H:%M")
     log.debug("sleeptimer: tmFrom: %s" % str(tmFrom))
-    tmTil = datetime.datetime.strptime(sleeptime[1],"%H:%M") + datetime.timedelta(hours = 24)
+    tmTil = datetime.datetime.strptime(sleeptime[1], "%H:%M") + datetime.timedelta(hours=24)
     log.debug("sleeptimer: tmTil: %s" % str(tmTil))
     while True:
         # we assume sleep is always at night...
-        tmNow = datetime.datetime.strptime(datetime.datetime.now().strftime('%H:%M'),"%H:%M")
-        tmNowNextDay = tmNow + datetime.timedelta(hours = 24)
-        # log.debug("tmNow: %s" % str(tmNow))
+        tmNow = datetime.datetime.strptime(datetime.datetime.now().strftime('%H:%M'), "%H:%M")
+        tmNowNextDay = tmNow + datetime.timedelta(hours=24)
+        log.debug("Time now: %s" % tmNow)
+        log.debug("Time Now Next Day: %s" % tmNowNextDay)
+        log.debug("Time From: %s" % tmFrom)
+        log.debug("Time Til: %s" % tmTil)
 
-        if tmNow >= tmFrom and tmNowNextDay < tmTil:
+        if tmNow >= tmFrom or tmNowNextDay < tmTil:
             log.info('sleeptimer: Going to sleep - byebye')
             # Stopping pogo...
             if telnMore:
@@ -217,10 +224,14 @@ def sleeptimer(sleeptime):
             sleep = True
 
             while sleep:
-                tmNow = datetime.datetime.strptime(datetime.datetime.now().strftime('%H:%M'),"%H:%M")
-                tmNowNextDay = tmNow + datetime.timedelta(hours = 24)
+                log.debug("Time now: %s" % tmNow)
+                log.debug("Time Now Next Day: %s" % tmNowNextDay)
+                log.debug("Time From: %s" % tmFrom)
+                log.debug("Time Til: %s" % tmTil)
+                tmNow = datetime.datetime.strptime(datetime.datetime.now().strftime('%H:%M'), "%H:%M")
+                tmNowNextDay = tmNow + datetime.timedelta(hours=24)
                 log.debug('sleeptimer: Still sleeping, current time... %s' % str(tmNow))
-                if tmNow < tmFrom and tmNowNextDay >= tmTil:
+                if tmNow < tmFrom or tmNowNextDay >= tmTil:
                     log.warning('sleeptimer: Wakeup - here we go ...')
                     # Turning screen on and starting app
                     if telnMore:
@@ -228,8 +239,8 @@ def sleeptimer(sleeptime):
                         telnMore.startApp("sleeptimer: com.nianticlabs.pokemongo")
                     sleep = False
                     break
-                time.sleep(1)
-        time.sleep(1)
+                time.sleep(60)
+        time.sleep(60)
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -256,9 +267,9 @@ def set_log_and_verbosity(log):
         log.addHandler(filelog)
 
     if args.verbose:
-            log.setLevel(logging.DEBUG)
+        log.setLevel(logging.DEBUG)
     else:
-            log.setLevel(logging.INFO)
+        log.setLevel(logging.INFO)
 
 
 # to be called regularly... like every 5mins? no idea... would be nicer to simply insert updates
@@ -361,7 +372,7 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
         log.info("getToRaidscreen: Attempting to retrieve screenshot checking windows")
         log.info("getToRaidscreen: Waiting %s seconds befor taking screenshot" % str(args.post_screenshot_delay))
 
-        #time.sleep(args.post_screenshot_delay)
+        # time.sleep(args.post_screenshot_delay)
         if not screenWrapper.getScreenshot('screenshot.png'):
             log.error("getToRaidscreen: Failed retrieving screenshot before checking windows")
             if not again:
@@ -403,24 +414,24 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
         found = pogoWindowManager.lookForButton('screenshot.png', 1.60)
         if found:
             log.info("getToRaidscreen: Found button")
-        #if checkAll:
-            # also check for login and stuff...
-            #if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20):
-            #    log.info("getToRaidscreen: Found post-login OK button")
-            #    found = True
-            #    time.sleep(0.5)
-            #if not found and pogoWindowManager.lookForButton('screenshot.png', 3.01):
-            #    log.info("getToRaidscreen: Found post login news message")
-            #    found = True
-            #    time.sleep(0.5)
-        #if not found and pogoWindowManager.checkCloseExceptNearbyButton('screenshot.png', 123):
+        # if checkAll:
+        # also check for login and stuff...
+        # if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20):
+        #    log.info("getToRaidscreen: Found post-login OK button")
+        #    found = True
+        #    time.sleep(0.5)
+        # if not found and pogoWindowManager.lookForButton('screenshot.png', 3.01):
+        #    log.info("getToRaidscreen: Found post login news message")
+        #    found = True
+        #    time.sleep(0.5)
+        # if not found and pogoWindowManager.checkCloseExceptNearbyButton('screenshot.png', 123):
         #    log.info("getToRaidscreen: Found (X) button (except nearby)")
         #    found = True
-        #if not found and pogoWindowManager.lookForButton('screenshot.png', 1.05):
+        # if not found and pogoWindowManager.lookForButton('screenshot.png', 1.05):
         #    log.info("getToRaidscreen: Found weather warning")
         #    found = True
         #    time.sleep(0.5)
-        #if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20, True):
+        # if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20, True):
         #    log.info("getToRaidscreen: Found game quit popup")
         #    found = True
         #    time.sleep(0.5)
@@ -513,7 +524,8 @@ def main_thread():
                         args.tel_timeout_socket)
 
     log.info("main: Starting dbWrapper")
-    dbWrapper = DbWrapper(str(args.db_method), str(args.dbip), args.dbport, args.dbusername, args.dbpassword, args.dbname, args.timezone)
+    dbWrapper = DbWrapper(str(args.db_method), str(args.dbip), args.dbport, args.dbusername, args.dbpassword,
+                          args.dbname, args.timezone)
     updateRaidQueue(dbWrapper)
     lastRaidQueueUpdate = time.time()
 
@@ -562,7 +574,7 @@ def main_thread():
 
             # Restart pogo every now and then...
             if args.restart_pogo > 0:
-                #log.debug("main: Current time - lastPogoRestart: %s" % str(curTime - lastPogoRestart))
+                # log.debug("main: Current time - lastPogoRestart: %s" % str(curTime - lastPogoRestart))
                 # if curTime - lastPogoRestart >= (args.restart_pogo * 60):
                 locationCount += 1
                 if locationCount > args.restart_pogo:
@@ -575,7 +587,8 @@ def main_thread():
             lastLat = curLat
             lastLng = curLng
             egghatchLocation = False
-            log.debug("main: Checking for raidqueue priority. Current time: %s, Current queue: %s" % (str(time.time()), str(nextRaidQueue)))
+            log.debug("main: Checking for raidqueue priority. Current time: %s, Current queue: %s" % (
+            str(time.time()), str(nextRaidQueue)))
             # determine whether we move to the next gym or to the top of our priority queue
             if not lastRoundEggHatch and len(nextRaidQueue) > 0 and nextRaidQueue[0][0] < time.time():
                 # the topmost item in the queue lays in the past...
@@ -602,7 +615,7 @@ def main_thread():
             log.info('main: Moving %s meters to the next position' % distance)
             delayUsed = 0
             if (args.speed == 0 or
-                (args.max_distance and args.max_distance > 0 and distance > args.max_distance)
+                    (args.max_distance and args.max_distance > 0 and distance > args.max_distance)
                     or (lastLat == 0.0 and lastLng == 0.0)):
                 log.info("main: Teleporting...")
                 telnGeo.setLocation(curLat, curLng, 0)
@@ -650,13 +663,13 @@ def main_thread():
                 tabOutAndInPogo()
                 screenWrapper.getScreenshot('screenshot.png')
                 countOfRaids = pogoWindowManager.readRaidCircles('screenshot.png', 123)
-        #    elif countOfRaids == 0:
-        #        emptycount += 1
-        #        if emptycount > 30:
-        #            emptycount = 0
-        #            log.error("Had 30 empty scans, restarting pogo")
-        #            restartPogo()
-        
+            #    elif countOfRaids == 0:
+            #        emptycount += 1
+            #        if emptycount > 30:
+            #            emptycount = 0
+            #            log.error("Had 30 empty scans, restarting pogo")
+            #            restartPogo()
+
             log.debug("main: Checking Screenhash")
             screenHash = getImageHash('screenshot.png')
             log.debug("main: Old Hash: " + lastScreenHash)
@@ -668,26 +681,28 @@ def main_thread():
                 if lastScreenHashCount >= 100:
                     lastScreenHashCount = 0
                     restartPogo()
-            else: 
+            else:
                 lastScreenHash = screenHash
-                lastScreenHashCount = 0       
+                lastScreenHashCount = 0
                 if countOfRaids > 0:
                     log.debug("main: New und old Screenshoot are different - starting OCR")
                     log.debug("main: countOfRaids: %s" % str(countOfRaids))
                     curTime = time.time()
-                    copyFileName = args.raidscreen_path + '/raidscreen_' + str(curTime) + "_" + str(curLat) + "_" + str(curLng) + "_" + str(countOfRaids) + '.png'
+                    copyFileName = args.raidscreen_path + '/raidscreen_' + str(curTime) + "_" + str(curLat) + "_" + str(
+                        curLng) + "_" + str(countOfRaids) + '.png'
                     log.debug('Copying file: ' + copyFileName)
                     copyfile('screenshot.png', copyFileName)
                     os.remove('screenshot.png')
                 else:
                     log.debug("main: New und old Screenshoot are different - starting OCR")
                     log.info('main: No Raids found or active')
-            
+
             log.debug("main: Releasing lock")
             windowLock.release()
 
-def dhash(image, hash_size = 8):
-            # Grayscale and shrink the image in one step.
+
+def dhash(image, hash_size=8):
+    # Grayscale and shrink the image in one step.
     image = image.convert('L').resize(
         (hash_size + 1, hash_size),
         Image.ANTIALIAS,
@@ -700,20 +715,20 @@ def dhash(image, hash_size = 8):
             pixel_left = image.getpixel((col, row))
             pixel_right = image.getpixel((col + 1, row))
             difference.append(pixel_left > pixel_right)
-    # Convert the binary array to a hexadecimal string.
+        # Convert the binary array to a hexadecimal string.
         decimal_value = 0
         hex_string = []
         for index, value in enumerate(difference):
             if value:
-                decimal_value += 2**(index % 8)
+                decimal_value += 2 ** (index % 8)
             if (index % 8) == 7:
                 hex_string.append(hex(decimal_value)[2:].rjust(2, '0'))
                 decimal_value = 0
     hashValue = ''.join(hex_string)
     return hashValue
 
+
 def getImageHash(image, hashSize=8):
-    
     try:
         image_temp = cv2.imread(image)
     except:
@@ -727,17 +742,19 @@ def getImageHash(image, hashSize=8):
     imageHash = dhash(hashPic, hashSize)
     return imageHash
 
+
 def hamming_distance(str1, str2):
     diffs = 0
     for ch1, ch2 in zip(str1, str2):
         if ch1 != ch2:
             diffs += 1
     return diffs
-    
+
+
 def observer(scrPath, width, height):
-        observer = Observer()
-        observer.schedule(checkScreenshot(width, height), path=scrPath)
-        observer.start()
+    observer = Observer()
+    observer.schedule(checkScreenshot(width, height), path=scrPath)
+    observer.start()
 
 
 if __name__ == '__main__':

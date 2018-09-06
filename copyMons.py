@@ -99,42 +99,6 @@ class MonRaidImages(object):
         dbWrapper.deleteHashTable(_monList, 'mon')
 
 
-
-    @staticmethod
-    def copyEggs(pogoasset):
-        from shutil import copyfile
-
-        log.info('Processing Eggs')
-
-        eggImgPath = os.getcwd() + '/mon_img/'
-        filePath = os.path.dirname(eggImgPath)
-
-        if not os.path.exists(filePath):
-            LOG.info('mon_img directory created')
-            os.makedirs(filePath)
-
-        assetPath = pogoasset
-        eggIcons = ['ic_raid_egg_normal.png', 'ic_raid_egg_rare.png', 'ic_raid_egg_legendary.png']
-        i = 1
-        for egg in eggIcons:
-
-            eggFile = eggImgPath + str('_egg_') + str(i) + '_.png'
-
-            if not os.path.isfile(eggFile):
-
-                log.info('Processing Egg File: ' + str(egg))
-
-                eggFileAsset = assetPath + 'static_assets/png/'+ str(egg)
-
-                if not os.path.isfile(eggFileAsset):
-                    log.error('File ' + str(eggFileAsset) + ' not found')
-                    exit(0)
-
-                MonRaidImages.read_transparent_png(eggFileAsset, eggFile)
-
-                log.info('Processing Eggfile: ' + str(egg) + ' finished')
-                i = i +1
-
     @staticmethod
     def read_transparent_png(assetFile, saveFile):
         image_4channel = cv2.imread(assetFile, cv2.IMREAD_UNCHANGED)
@@ -157,7 +121,6 @@ class MonRaidImages(object):
     @staticmethod
     def runAll(pogoasset):
         MonRaidImages.copyMons(pogoasset)
-        MonRaidImages.copyEggs(pogoasset)
         
 if __name__ == '__main__':
     MonRaidImages.runAll('../../PogoAssets/')

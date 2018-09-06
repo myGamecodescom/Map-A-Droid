@@ -40,6 +40,9 @@ class Scanner:
         self.timezone = timezone
         self.uniqueHash = hash
         self.dbMethod = dbMethod
+        
+        #new www service
+        self.www_hash = 'www_hash'
 
         self.dbWrapper = DbWrapper(self.dbMethod, self.dbIp, self.dbPort, self.dbUser, self.dbPassword, self.dbName, self.timezone, self.uniqueHash)
 
@@ -50,6 +53,10 @@ class Scanner:
         if not os.path.exists(self.unknownPath):
             log.info('Unknow directory created')
             os.makedirs(self.unknownPath)
+            
+        if not os.path.exists(self.www_hash):
+            log.info('www_hash directory created')
+            os.makedirs(self.www_hash)
 
     def detectRaidTime(self, raidpic, hash, raidNo, radius):
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'detectRaidTime: Reading Raidtimer')
@@ -236,7 +243,7 @@ class Scanner:
         
         if self.checkDummy(raidpic, x1, x2, y1, y2, hash, raidNo, radius):
             log.info('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'detectGym: Found dummy gym pic')
-            return None
+            return 'dummy'
             
         if foundMonCrops:
             gymHash = None
@@ -293,8 +300,12 @@ class Scanner:
             self.addTextToCrop(raidpic, text, True)
         
         raidpic = cv2.imread(raidpic)
-        cv2.imwrite(os.path.join(self.unknownPath, str(raidNo) + "_" + str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(time.time()) +  "_" + str(imageHash) +".jpg"), raidpic)
-        log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'unknownfound: Write unknown file: ' + str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(time.time()) +".jpg")
+        if imageHash:
+            cv2.imwrite(os.path.join(self.www_hash, str(lat) + "_" + str(lng) + "_" + str(imageHash) +".jpg"), raidpic)
+            log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'unknownfound: Write unknown hash file for www: ' + str(lat) + "_" + str(lng) + "_" + str(imageHash) +".jpg") 
+        else:
+            cv2.imwrite(os.path.join(self.unknownPath, str(raidNo) + "_" + str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(time.time()) +  "_" + str(imageHash) +".jpg"), raidpic)
+            log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'unknownfound: Write unknown file: ' +  str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(time.time()) +".jpg")
         return True
         
     def addTextToCrop(self, picture, text, grayscale=False):
@@ -489,6 +500,10 @@ class Scanner:
             #let's get the gym we're likely scanning the image of
             gymId = self.detectGym(raidhashPic, hash, raidNo, captureLat, captureLng, radius)
             #gymId is either None for Gym not found or contains the gymId as String
+            
+        if gymId == 'dummy':
+            log.warning('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: determine dummy pic, aborting analysis')
+            return True
 
         if gymId is None:
             #gym unknown...

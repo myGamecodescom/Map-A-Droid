@@ -218,6 +218,11 @@ class PogoWindows:
 
         log.debug("readCircles: Determined screenshot to not contain raidcircles, but a raidcount!")
         return -1
+        
+    def find_nearest(self, array, value):
+        array = np.asarray(array)
+        idx = (np.abs(array - value)).argmin()
+        return array[idx]
 
     def lookForButton(self, filename, ratio):
         log.debug("lookForButton: Reading lines")
@@ -232,6 +237,8 @@ class PogoWindows:
         if screenshotRead is None:
             log.error("Screenshot corrupted :(")
             return False
+            
+        allowRatio = [1.60, 1.05, 2.20, 3.01, 2.32]
 
         height, width, _ = screenshotRead.shape
         _widthold = float(width)
@@ -267,18 +274,23 @@ class PogoWindows:
         for line in lines:
             for x1, y1, x2, y2 in line:
                 if y1 == y2 and (x2 - x1 <= maxLineLength) and (x2 - x1 >= minLineLength) and y1 > height / 2:
+                    xDiff = float(x2 - x1)
+                    ratio_calc = width / xDiff
+
+                    nearestValue=(self.find_nearest(allowRatio, ratio_calc))
+                    if ratio_calc  < nearestValue + 0.1 and ratio_calc  > nearestValue - 0.1:
+                        
+                        lineCount += 1
+                        __y = y2
+                        __x1 = x1
+                        __x2 = x2
+                        if __y < _y:
+                            _y = __y
+                            _x1 = __x1
+                            _x2 = __x2
                     
-                    lineCount += 1
-                    __y = y2
-                    __x1 = x1
-                    __x2 = x2
-                    if __y < _y:
-                        _y = __y
-                        _x1 = __x1
-                        _x2 = __x2
-                    
-                    log.debug("lookForButton: Found Buttonline Nr. " + str(lineCount) + " - Line lenght: " + str(
-                        x2 - x1) + "px Coords - X: " + str(x1) + " " + str(x2) + " Y: " + str(y1) + " " + str(y2))
+                        log.debug("lookForButton: Found Buttonline Nr. " + str(lineCount) + " - Line lenght: " + str(
+                            x2 - x1) + "px Coords - X: " + str(x1) + " " + str(x2) + " Y: " + str(y1) + " " + str(y2))
 
         if lineCount >= 1 and lineCount < 4:
             
@@ -287,6 +299,11 @@ class PogoWindows:
             click_y = int(_y / round(faktor,2) + height*0.03)
             log.debug('lookForButton: found Button - click on it' )
             self.screenWrapper.click(click_x, click_y)
+            time.sleep(2)
+            
+        elif lineCount > 4:
+            log.debug('lookForButton: found to much Buttons :) - close it' )
+            self.screenWrapper.backButton()
             time.sleep(2)
                 
             return True
@@ -407,7 +424,7 @@ class PogoWindows:
         posNearby = self.__readCircleCords(filename,hash,7.05, crop = True)
         if posNearby[0]:
             self.screenWrapper.click(int(posNearby[4]*0.95),int(posNearby[2]))
-        time.sleep(2)
+        time.sleep(4)
         return False
 
     def checkWeatherWarning(self, filename, hash):
@@ -467,7 +484,10 @@ class PogoWindows:
             return False 
             
         log.debug("checkCloseExceptNearbyButton: Checking for close button (X). Input wrong OR nearby window open")   
-
+        
+        if (self.__checkClosePresent(filename, hash, 10, False)):
+            log.debug("Found close button (X). Closing the window - Ratio: 10")
+            return True
         if (self.__checkClosePresent(filename, hash, 12, False)):
             log.debug("Found close button (X). Closing the window - Ratio: 12")
             return True

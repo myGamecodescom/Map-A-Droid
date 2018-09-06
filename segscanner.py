@@ -54,7 +54,7 @@ class Scanner:
     def detectRaidTime(self, raidpic, hash, raidNo, radius):
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'detectRaidTime: Reading Raidtimer')
         height, width, channel = raidpic.shape
-        raidtimer = raidpic[int(round(radius*2*0.03)+(2*radius)+(radius*2*0.28)):int(round(radius*2*0.03)+(2*radius)+(radius*2*0.43)), 0:width]
+        raidtimer = raidpic[int(round(radius*2*0.03)+(2*radius)+(radius*2*0.26)):int(round(radius*2*0.03)+(2*radius)+(radius*2*0.43)), 0:width]
         raidtimer = cv2.resize(raidtimer, (0,0), fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         emptyRaidTempPath = os.path.join(self.tempPath, str(raidNo) + str(hash) + '_emptyraid.png')
         cv2.imwrite(emptyRaidTempPath, raidtimer)

@@ -413,9 +413,9 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
             #    log.info("getToRaidscreen: Found post login news message")
             #    found = True
             #    time.sleep(0.5)
-        #if not found and pogoWindowManager.checkCloseExceptNearbyButton('screenshot.png', 123):
-        #    log.info("getToRaidscreen: Found (X) button (except nearby)")
-        #    found = True
+        if not found and pogoWindowManager.checkCloseExceptNearbyButton('screenshot.png', 123):
+            log.info("getToRaidscreen: Found (X) button (except nearby)")
+            found = True
         #if not found and pogoWindowManager.lookForButton('screenshot.png', 1.05):
         #    log.info("getToRaidscreen: Found weather warning")
         #    found = True
@@ -454,7 +454,7 @@ def turnScreenOnAndStartPogo():
         time.sleep(args.post_turn_screen_on_delay)
     # check if pogo is running and start it if necessary
     log.warning("turnScreenOnAndStartPogo: (Re-)Starting Pogo")
-    restartPogo()
+    #restartPogo()
 
 
 def reopenRaidTab():

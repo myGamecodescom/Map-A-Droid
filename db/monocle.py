@@ -659,7 +659,15 @@ class MonocleWrapper:
         if not os.path.exists(file_path):
             os.makedirs(file_path)
 
-        query = ("SELECT forts.id, forts.lat, forts.lon, forts.name, forts.url, IFNULL(forts.park, 'unknown'), forts.sponsor FROM forts")
+        query = "SELECT forts.id, forts.lat, forts.lon, forts.name, forts.url, IFNULL(forts.park, 'unknown'), forts.sponsor FROM forts"
+
+        lll = args.latlngleft
+        llr = args.latlngright
+        if lll and llr:
+            query = "{0}{1}".format(query,
+                                    ' where (lat BETWEEN {} AND {}) AND (lon BETWEEN {} AND {})'.format(lll[0], llr[0],
+                                                                                                        lll[1], llr[1]))
+
         cursor = connection.cursor()
         cursor.execute(query)
 

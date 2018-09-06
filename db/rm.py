@@ -185,12 +185,13 @@ class RmWrapper:
 
     def submitRaid(self, gym, pkm, lvl, start, end, type, raidNo, captureTime, MonWithNoEgg=False):
         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) + ') ] ' + 'submitRaid: Submitting raid')
-        
+
         if self.raidExist(gym, type, raidNo, pkm):
             self.refreshTimes(gym, raidNo, captureTime)
-            log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'submitRaid: %s already submitted - ignoring' % str(type))
+            log.debug('[Crop: ' + str(raidNo) + ' (' + str(
+                self.uniqueHash) + ') ] ' + 'submitRaid: %s already submitted - ignoring' % str(type))
             return False
-        
+
         try:
             connection = mysql.connector.connect(host=self.host,
                                                  user=self.user, port=self.port, passwd=self.password,
@@ -226,7 +227,6 @@ class RmWrapper:
                      'pokemon_id = %s, last_scanned = FROM_UNIXTIME(%s), cp = %s, move_1 = %s, move_2 = %s '
             data = (lvl, captureTime, start, end, pkm, int(time.time()), '999', '1', '1')
 
-
             # send out a webhook - this case should only occur once...
             wh_send = True
             wh_start = start
@@ -252,12 +252,10 @@ class RmWrapper:
                      'pokemon_id = %s, ' \
                      'last_scanned = FROM_UNIXTIME(%s), cp = %s, move_1 = %s, move_2 = %s '
             data = (lvl, captureTime, start, end, pkm, int(time.time()), '999', '1', '1')
-            
 
             wh_send = True
             wh_start = start
             wh_end = end
-
 
         query = updateStr + setStr + whereStr
         log.debug(query % data)
@@ -514,7 +512,7 @@ class RmWrapper:
         cursor.close()
         connection.close()
         return data
-        
+
     def checkGymsNearby(self, lat, lng, hash, raidNo, gym):
         try:
             connection = mysql.connector.connect(host=self.host,
@@ -564,10 +562,10 @@ class RmWrapper:
 
         cursor = connection.cursor()
         query = (
-                    'insert into scannedlocation (cellid, latitude, longitude, last_modified, done, band1, band2, '
-                    'band3, band4, band5, midpoint, width) values ' +
-                    '(' + str(
-                time.time()) + ', ' + lat + ', ' + lng + ', \'' + now + '\', 1, -1, -1, -1, -1, -1, -1, -1)')
+                'insert into scannedlocation (cellid, latitude, longitude, last_modified, done, band1, band2, '
+                'band3, band4, band5, midpoint, width) values ' +
+                '(' + str(
+            time.time()) + ', ' + lat + ', ' + lng + ', \'' + now + '\', 1, -1, -1, -1, -1, -1, -1, -1)')
         cursor.execute(query)
 
         connection.commit()
@@ -603,7 +601,8 @@ class RmWrapper:
         return True
 
     def __encodeHashJson(self, team_id, latitude, longitude, name, description, url):
-        return ({'team_id': team_id, 'latitude': latitude, 'longitude': longitude, 'name': name, 'description': '', 'url': url})
+        return (
+        {'team_id': team_id, 'latitude': latitude, 'longitude': longitude, 'name': name, 'description': '', 'url': url})
 
     def __download_img(self, url, file_name):
         retry = 1
@@ -648,6 +647,17 @@ class RmWrapper:
         query = "SELECT gym.gym_id, gym.team_id, gym.latitude, gym.longitude, gymdetails.name, " \
                 "gymdetails.description, gymdetails.url FROM gym inner join gymdetails where gym.gym_id = " \
                 "gymdetails.gym_id "
+
+        lll = args.latlngleft
+        llr = args.latlngright
+
+        if lll and llr:
+            query = "{0}{1}".format(query,
+                                    ' AND (latitude BETWEEN {} AND {}) AND (longitude BETWEEN {} AND {})'
+                                    .format(lll[0],
+                                            llr[0],
+                                            lll[1],
+                                            llr[1]))
         cursor = connection.cursor()
         cursor.execute(query)
 

@@ -123,14 +123,14 @@ class PogoWindows:
         height, width, _ = screenshotRead.shape
         
         if crop:
-            screenshotRead = screenshotRead[int(height)-int(height/5):int(height),int(width)/2-int(width)/8:int(width)/2+int(width)/8]
+            screenshotRead = screenshotRead[int(height)-int(height/4.5):int(height),int(width)/2-int(width)/8:int(width)/2+int(width)/8]
 
         log.debug("__readCircleCount: Determined screenshot scale: " + str(height) + " x " + str(width))
         gray = cv2.cvtColor(screenshotRead, cv2.COLOR_BGR2GRAY)
         # detect circles in the image
 
-        radMin = int((width / float(ratio) - 3) / 2)
-        radMax = int((width / float(ratio) + 3) / 2)
+        radMin = int((width / float(ratio) - 1) / 2)
+        radMax = int((width / float(ratio) + 1) / 2)
         log.debug("__readCircleCount: Detect radius of circle: Min " + str(radMin) + " Max " + str(radMax))
         circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, width / 8, param1=100, param2=15, minRadius=radMin,
                                    maxRadius=radMax)
@@ -141,18 +141,19 @@ class PogoWindows:
             circles = np.round(circles[0, :]).astype("int")
             # loop over the (x, y) coordinates and radius of the circles
             for (x, y, r) in circles:
+
                 if not xcord:
                     circle += 1
                     if click:
                         log.debug('__readCircleCount: found Circle - click it')
-                        self.screenWrapper.click(width/2, ((int(height)-int(height/5)))+y)
+                        self.screenWrapper.click(width/2, ((int(height)-int(height/4.5)))+y)
                         time.sleep(2)
                 else:
                     if x >= (width / 2) - 100 and x <= (width / 2) + 100 and y >= (height - (height / 3)):
                         circle += 1
                         if click:
                             log.debug('__readCircleCount: found Circle - click on: it' )
-                            self.screenWrapper.click(width/2, ((int(height)-int(height/5)))+y)
+                            self.screenWrapper.click(width/2, ((int(height)-int(height/4.5)))+y)
                             time.sleep(2)
 
             log.debug("__readCircleCount: Determined screenshot to have " + str(circle) + " Circle.")
@@ -290,12 +291,13 @@ class PogoWindows:
             click_y = int(_y / round(faktor,2) + height*0.03)
             log.debug('lookForButton: found Button - click on it' )
             self.screenWrapper.click(click_x, click_y)
-            time.sleep(3)
+            time.sleep(4)
+            return True
             
         elif lineCount > 4:
             log.debug('lookForButton: found to much Buttons :) - close it' )
             self.screenWrapper.backButton()
-            time.sleep(2)
+            time.sleep(4)
                 
             return True
         
@@ -403,6 +405,15 @@ class PogoWindows:
         return False
 
     def checkNearby(self, filename, hash):
+        try:
+            screenshotRead = cv2.imread(filename)
+        except:
+            log.error("Screenshot corrupted :(")
+            return False
+        if screenshotRead is None:
+            log.error("Screenshot corrupted :(")
+            return False
+        
         if self.__checkRaidLine(filename, hash):
             log.info('Nearby already open')
             return True
@@ -453,7 +464,7 @@ class PogoWindows:
 
         cv2.imwrite(os.path.join(self.tempDirPath, str(hash) + '_exitcircle.jpg'), image)
              
-        if self.__readCircleCount(os.path.join(self.tempDirPath, str(hash) + '_exitcircle.jpg'), hash, float(radiusratio), Xcord, crop=True, click=True) > 0:
+        if self.__readCircleCount(os.path.join(self.tempDirPath, str(hash) + '_exitcircle.jpg'), hash, float(radiusratio), xcord=False, crop=True, click=True) > 0:
             return True
 
     #checks for X button on any screen... could kill raidscreen, handle properly
@@ -477,16 +488,16 @@ class PogoWindows:
             
         log.debug("checkCloseExceptNearbyButton: Checking for close button (X). Input wrong OR nearby window open")   
         
-        if (self.__checkClosePresent(filename, hash, 10, False)):
+        if (self.__checkClosePresent(filename, hash, 10, True)):
             log.debug("Found close button (X). Closing the window - Ratio: 10")
             return True
-        if (self.__checkClosePresent(filename, hash, 12, False)):
+        if (self.__checkClosePresent(filename, hash, 12, True)):
             log.debug("Found close button (X). Closing the window - Ratio: 12")
             return True
-        if (self.__checkClosePresent(filename, hash, 14, False)):
+        if (self.__checkClosePresent(filename, hash, 14, True)):
             log.debug("Found close button (X). Closing the window - Ratio: 14")
             return True
-        if (self.__checkClosePresent(filename, hash, 13, False)):
+        if (self.__checkClosePresent(filename, hash, 13, True)):
             log.debug("Found close button (X). Closing the window - Ratio: 13")
             return True
         else:

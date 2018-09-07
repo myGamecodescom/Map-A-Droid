@@ -1,8 +1,8 @@
 from db.dbWrapper import DbWrapper
 from walkerArgs import parseArgs
+import os, glob
 
 args = parseArgs()
-
 dbWrapper = DbWrapper(str(args.db_method), str(args.dbip), args.dbport, args.dbusername, args.dbpassword, args.dbname, args.timezone)
 
 
@@ -15,12 +15,20 @@ def main():
     print ''
     print 'Additionally you need the gym_id or fort_id (rm or monocle)'
     print ''
+
     hash = raw_input("Enter Hash Value from Filename: ")
+   
     gym = raw_input("Enter Gym / Fort ID: ")
+
+        
     print ''
     if hash and gym:
         if dbWrapper.insertHash(hash, 'gym', gym, '999'):
             print 'Hash added - the Gym should now be recognized.'
+            
+            for file in glob.glob("www_hash/unkgym_*" + str(hash) + ".jpg"):
+                os.remove(file)
+            
         else:
             print 'something went wrong ....'
     else:

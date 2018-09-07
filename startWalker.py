@@ -5,7 +5,7 @@ import logging
 from colorlog import ColoredFormatter
 from walkerArgs import parseArgs
 import sys
-import os
+import glob, os
 import math
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
@@ -115,8 +115,10 @@ def main():
     dbWrapper.createHashDatabaseIfNotExists()
 
     if args.clean_hash_database:
-        log.info('Cleanup Hash Database')
+        log.info('Cleanup Hash Database and www_hash folder')
         dbWrapper.deleteHashTable('999', '')
+        for file in glob.glob("www_hash/*.jpg"):
+            os.remove(file)
         sys.exit(0)
 
     if not os.path.exists(args.raidscreen_path):

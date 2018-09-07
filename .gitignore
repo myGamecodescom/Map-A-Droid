@@ -18,3 +18,4 @@ mon_img/_egg_*
 mon_img/_mon*
 *.csv
 .idea/
+www_hash/*

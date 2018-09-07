@@ -301,8 +301,12 @@ class Scanner:
         
         raidpic = cv2.imread(raidpic)
         if imageHash:
-            cv2.imwrite(os.path.join(self.www_hash, str(lat) + "_" + str(lng) + "_" + str(imageHash) +".jpg"), raidpic)
-            log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'unknownfound: Write unknown hash file for www: ' + str(lat) + "_" + str(lng) + "_" + str(imageHash) +".jpg") 
+            existFile = os.path.join(self.www_hash, str(type) + "_*_" + str(imageHash) +".jpg")
+            if not glob.glob(existFile):
+                cv2.imwrite(os.path.join(self.www_hash, str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(imageHash) +".jpg"), raidpic)
+                log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'saveforweb: Write hash file for www: ' + str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(imageHash) +".jpg") 
+            else:
+                log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'saveforweb: Hash file for www already exists: ' + str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(imageHash) +".jpg") 
         else:
             cv2.imwrite(os.path.join(self.unknownPath, str(raidNo) + "_" + str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(time.time()) +  "_" + str(imageHash) +".jpg"), raidpic)
             log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'unknownfound: Write unknown file: ' +  str(type) + "_" + str(lat) + "_" + str(lng) + "_" + str(time.time()) +".jpg")
@@ -381,7 +385,7 @@ class Scanner:
             circles = np.round(circles[0, :]).astype("int")
             for (x, y, r) in circles:
                         log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'cropImage: Detect crop coordinates x: ' + str(x) +' y: ' + str(y) +' with radius: ' + str(r))
-                        new_crop = output[y-r-1:y+r+1, x-r-1:x+r+1]
+                        new_crop = output[y-r:y+r, x-r:x+r]
                         return new_crop
         return False
 
@@ -406,6 +410,8 @@ class Scanner:
 
         raidhashPic = os.path.join(self.tempPath, str(hash) + "_raidhash" + str(raidNo) +".jpg")
         cv2.imwrite(raidhashPic, raidhash)
+        
+        genRaidHash = self.getImageHash(raidhashPic, False, raidNo)
 
         #get (raidstart, raidend, raidtimer) as (timestamp, timestamp, human-readable hatch)
         raidtimer = self.detectRaidTime(img, hash, raidNo, radius)
@@ -508,9 +514,8 @@ class Scanner:
         if gymId is None:
             #gym unknown...
             log.warning('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Could not determine gym, aborting analysis')
-            gymhash = self.getImageHash(raidhashPic, True, raidNo, x1=0.30, x2=0.62, y1=0.62, y2=1.23, radius=radius)
             self.unknownfound(filenameOfCrop, 'gym', False, raidNo, hash, captureTime, False, captureLat, captureLng)
-            self.unknownfound(raidhashPic, 'gym_crop', False, raidNo, hash, False, gymhash, captureLat, captureLng)
+            self.unknownfound(raidhashPic, 'unkgym', False, raidNo, hash, False, genRaidHash, captureLat, captureLng)
             os.remove(filenameOfCrop)
             os.remove(raidhashPic)
             log.debug("start_detect[crop %s]: finished" % str(raidNo))
@@ -542,10 +547,11 @@ class Scanner:
                 
             if submitStatus:
                 self.successfound(filenameOfCrop, 'MON', gymId, raidNo, raidlevel, captureTime, str(monFound[0]))
-
             raidHashJson = self.encodeHashJson(gymId, raidlevel, monFound[0], raidNo)
             log.debug('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Adding Raidhash to Database: ' + str(raidHashJson))
             self.imageHash(raidhashPic, raidHashJson, False, 'raid', raidNo)
+            
+        self.unknownfound(raidhashPic, 'raid', False, raidNo, hash, False, genRaidHash, '0', '0')
 
         os.remove(raidhashPic)
         os.remove(filenameOfCrop)

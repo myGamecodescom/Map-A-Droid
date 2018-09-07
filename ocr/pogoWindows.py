@@ -219,7 +219,7 @@ class PogoWindows:
         log.debug("readCircles: Determined screenshot to not contain raidcircles, but a raidcount!")
         return -1
 
-    def lookForButton(self, filename, ratio):
+    def lookForButton(self, filename, ratiomin, ratiomax):
         log.debug("lookForButton: Reading lines")
         disToMiddleMin = None
         try:
@@ -232,6 +232,8 @@ class PogoWindows:
         if screenshotRead is None:
             log.error("Screenshot corrupted :(")
             return False
+            
+        allowRatio = [1.60, 1.05, 2.20, 3.01, 2.32]
 
         height, width, _ = screenshotRead.shape
         _widthold = float(width)
@@ -246,9 +248,9 @@ class PogoWindows:
         edges = cv2.Canny(gray, 100, 200, apertureSize=3)
         #checking for all possible button lines
 
-        maxLineLength = (width / 1.05) + (width*0.02)
+        maxLineLength = (width / ratiomin) + (width*0.02)
         log.debug("lookForButton: MaxLineLength:" + str(maxLineLength))
-        minLineLength = (width / 3.01) - (width*0.02)
+        minLineLength = (width / ratiomax) - (width*0.02)
         log.debug("lookForButton: MinLineLength:" + str(minLineLength))
 
         
@@ -266,8 +268,9 @@ class PogoWindows:
 
         for line in lines:
             for x1, y1, x2, y2 in line:
+
                 if y1 == y2 and (x2 - x1 <= maxLineLength) and (x2 - x1 >= minLineLength) and y1 > height / 2:
-                    
+                        
                     lineCount += 1
                     __y = y2
                     __x1 = x1
@@ -287,6 +290,11 @@ class PogoWindows:
             click_y = int(_y / round(faktor,2) + height*0.03)
             log.debug('lookForButton: found Button - click on it' )
             self.screenWrapper.click(click_x, click_y)
+            time.sleep(3)
+            
+        elif lineCount > 4:
+            log.debug('lookForButton: found to much Buttons :) - close it' )
+            self.screenWrapper.backButton()
             time.sleep(2)
                 
             return True
@@ -407,7 +415,7 @@ class PogoWindows:
         posNearby = self.__readCircleCords(filename,hash,7.05, crop = True)
         if posNearby[0]:
             self.screenWrapper.click(int(posNearby[4]*0.95),int(posNearby[2]))
-        time.sleep(2)
+        time.sleep(4)
         return False
 
     def checkWeatherWarning(self, filename, hash):
@@ -449,7 +457,7 @@ class PogoWindows:
             return True
 
     #checks for X button on any screen... could kill raidscreen, handle properly
-    def checkCloseExceptNearbyButton(self, filename, hash):
+    def checkCloseExceptNearbyButton(self, filename, hash, closeraid = False):
         try:
             screenshotRead = cv2.imread(filename)
         except:
@@ -459,15 +467,19 @@ class PogoWindows:
             log.error("Screenshot corrupted :(")
             return False
         
-        if (not os.path.isfile(filename) 
-            or self.__checkRaidLine(filename, hash)
-            or self.__checkRaidLine(filename, hash, True)):
-            #file not found or raid tab present
-            log.debug("checkCloseExceptNearbyButton: Not checking for close button (X). Input wrong OR nearby window open")
-            return False 
+        if not closeraid:
+            if (not os.path.isfile(filename) 
+                or self.__checkRaidLine(filename, hash)
+                or self.__checkRaidLine(filename, hash, True)):
+                #file not found or raid tab present
+                log.debug("checkCloseExceptNearbyButton: Not checking for close button (X). Input wrong OR nearby window open")
+                return False 
             
         log.debug("checkCloseExceptNearbyButton: Checking for close button (X). Input wrong OR nearby window open")   
-
+        
+        if (self.__checkClosePresent(filename, hash, 10, False)):
+            log.debug("Found close button (X). Closing the window - Ratio: 10")
+            return True
         if (self.__checkClosePresent(filename, hash, 12, False)):
             log.debug("Found close button (X). Closing the window - Ratio: 12")
             return True

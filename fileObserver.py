@@ -5,7 +5,6 @@ from walkerArgs import parseArgs
 from  segscanner import Scanner
 from threading import Thread, Event
 import logging
-from ocr.resolutionCalculator import *
 import collections
 import cv2
 import multiprocessing
@@ -29,12 +28,7 @@ class RaidScan:
 
 class checkScreenshot(PatternMatchingEventHandler):
     def __init__(self, width, height):
-        self.resolutionCalculator = ResolutionCalc(width, height)
         log.info("Starting pogo window manager in OCR thread")
-        # self.pogoWindowManager = PogoWindows(str(args.vnc_ip,), 1, args.vnc_port, args.vnc_password,
-        # args.screen_width, args.screen_height, args.temp_path)
-
-        # self.procPool = Pool(10)
         
     def cropImage(self, screenshot, captureTime, captureLat, captureLng, src_path):
         p = None
@@ -113,32 +107,6 @@ class checkScreenshot(PatternMatchingEventHandler):
         
         self.cropImage(raidPic, captureTime, captureLat, captureLng, event.src_path)
         log.debug("process: Done starting off processes")
-
-
-        #if int(amountOfRaids) == 1:
-        #    # we got just one raid...
-        #    boundsOfSingleRaid = self.resolutionCalculator.getRaidBoundsSingle()
-        #    log.debug(boundsOfSingleRaid)
-        #    p = self.prepareAnalysis(1, boundsOfSingleRaid, raidPic, captureTime, captureLat, captureLng, event.src_path)
-        #    if p is not None:
-        #        processes.append(p)
-        #        p.daemon = True
-        #        p.start()
-        #elif amountOfRaids == 2:
-        #    bounds.append(self.resolutionCalculator.getRaidBoundsTwo(1))
-        #    bounds.append(self.resolutionCalculator.getRaidBoundsTwo(2))
-        #else:
-        #    if amountOfRaids is None or amountOfRaids > 6:
-        #        amountOfRaids = 6 # ignore any more raids, shouldn't be the case all too often
-        #    for i in range(amountOfRaids): # 0 to 5....
-        #        bounds.append(self.resolutionCalculator.getRaidBounds(i + 1))
-        #log.debug(bounds)
-        #for i in range(len(bounds)):
-        #    p = self.prepareAnalysis(i + 1, bounds[i], raidPic, captureTime, captureLat, captureLng, event.src_path)
-        #    if p is not None:
-        #        processes.append(p)
-        #        p.daemon = True
-        #        p.start()
 
         # TODO: join threads/processes
         log.debug("process: Done starting off processes")

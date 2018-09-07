@@ -514,8 +514,9 @@ class Scanner:
         if gymId is None:
             #gym unknown...
             log.warning('[Crop: ' + str(raidNo) + ' (' + str(self.uniqueHash) +') ] ' + 'start_detect: Could not determine gym, aborting analysis')
+            genGymHash = self.getImageHash(raidhashPic, True, raidNo)
             self.unknownfound(filenameOfCrop, 'gym', False, raidNo, hash, captureTime, False, captureLat, captureLng)
-            self.unknownfound(raidhashPic, 'unkgym', False, raidNo, hash, False, genRaidHash, captureLat, captureLng)
+            self.unknownfound(raidhashPic, 'unkgym', False, raidNo, hash, False, genGymHash, captureLat, captureLng)
             os.remove(filenameOfCrop)
             os.remove(raidhashPic)
             log.debug("start_detect[crop %s]: finished" % str(raidNo))

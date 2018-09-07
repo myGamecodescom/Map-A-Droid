@@ -218,13 +218,8 @@ class PogoWindows:
 
         log.debug("readCircles: Determined screenshot to not contain raidcircles, but a raidcount!")
         return -1
-        
-    def find_nearest(self, array, value):
-        array = np.asarray(array)
-        idx = (np.abs(array - value)).argmin()
-        return array[idx]
 
-    def lookForButton(self, filename, ratio):
+    def lookForButton(self, filename, ratiomin, ratiomax):
         log.debug("lookForButton: Reading lines")
         disToMiddleMin = None
         try:
@@ -253,9 +248,9 @@ class PogoWindows:
         edges = cv2.Canny(gray, 100, 200, apertureSize=3)
         #checking for all possible button lines
 
-        maxLineLength = (width / 1.05) + (width*0.02)
+        maxLineLength = (width / ratiomin) + (width*0.02)
         log.debug("lookForButton: MaxLineLength:" + str(maxLineLength))
-        minLineLength = (width / 3.01) - (width*0.02)
+        minLineLength = (width / ratiomax) - (width*0.02)
         log.debug("lookForButton: MinLineLength:" + str(minLineLength))
 
         
@@ -273,24 +268,20 @@ class PogoWindows:
 
         for line in lines:
             for x1, y1, x2, y2 in line:
-                if y1 == y2 and (x2 - x1 <= maxLineLength) and (x2 - x1 >= minLineLength) and y1 > height / 2:
-                    xDiff = float(x2 - x1)
-                    ratio_calc = width / xDiff
 
-                    nearestValue=(self.find_nearest(allowRatio, ratio_calc))
-                    if ratio_calc  < nearestValue + 0.1 and ratio_calc  > nearestValue - 0.1:
+                if y1 == y2 and (x2 - x1 <= maxLineLength) and (x2 - x1 >= minLineLength) and y1 > height / 2:
                         
-                        lineCount += 1
-                        __y = y2
-                        __x1 = x1
-                        __x2 = x2
-                        if __y < _y:
-                            _y = __y
-                            _x1 = __x1
-                            _x2 = __x2
+                    lineCount += 1
+                    __y = y2
+                    __x1 = x1
+                    __x2 = x2
+                    if __y < _y:
+                        _y = __y
+                        _x1 = __x1
+                        _x2 = __x2
                     
-                        log.debug("lookForButton: Found Buttonline Nr. " + str(lineCount) + " - Line lenght: " + str(
-                            x2 - x1) + "px Coords - X: " + str(x1) + " " + str(x2) + " Y: " + str(y1) + " " + str(y2))
+                    log.debug("lookForButton: Found Buttonline Nr. " + str(lineCount) + " - Line lenght: " + str(
+                        x2 - x1) + "px Coords - X: " + str(x1) + " " + str(x2) + " Y: " + str(y1) + " " + str(y2))
 
         if lineCount >= 1 and lineCount < 4:
             
@@ -299,7 +290,7 @@ class PogoWindows:
             click_y = int(_y / round(faktor,2) + height*0.03)
             log.debug('lookForButton: found Button - click on it' )
             self.screenWrapper.click(click_x, click_y)
-            time.sleep(2)
+            time.sleep(3)
             
         elif lineCount > 4:
             log.debug('lookForButton: found to much Buttons :) - close it' )

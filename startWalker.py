@@ -411,12 +411,16 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
             time.sleep(1)
             continue
         # not using continue since we need to get a screen before the next round...
-        found = pogoWindowManager.lookForButton('screenshot.png', 1.60)
+        found = pogoWindowManager.lookForButton('screenshot.png', 2.20, 3.01)
         if found:
-            log.info("getToRaidscreen: Found button")
+            log.info("getToRaidscreen: Found button (small)")
 
         if not found and pogoWindowManager.checkCloseExceptNearbyButton('screenshot.png', 123):
             log.info("getToRaidscreen: Found (X) button (except nearby)")
+            found = True
+        
+        if not found and pogoWindowManager.lookForButton('screenshot.png', 1.05, 2.20):
+            log.info("getToRaidscreen: Found button (big)")
             found = True
 
         log.info("getToRaidscreen: Previous checks found popups: %s" % str(found))
@@ -448,7 +452,7 @@ def turnScreenOnAndStartPogo():
         time.sleep(args.post_turn_screen_on_delay)
     # check if pogo is running and start it if necessary
     log.warning("turnScreenOnAndStartPogo: (Re-)Starting Pogo")
-    restartPogo()
+    #restartPogo()
 
 
 def reopenRaidTab():

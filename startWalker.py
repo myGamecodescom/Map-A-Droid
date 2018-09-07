@@ -342,7 +342,7 @@ def startPogo(withLock=True):
     return reachedRaidtab
 
 
-def getToRaidscreen(maxAttempts, checkAll=False, again=False):
+def getToRaidscreen(maxAttempts, again=False):
     # check for any popups (including post login OK)
     global lastScreenshotTaken
 
@@ -361,11 +361,10 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
         log.info("getToRaidscreen: Attempting to retrieve screenshot checking windows")
         log.info("getToRaidscreen: Waiting %s seconds befor taking screenshot" % str(args.post_screenshot_delay))
 
-        #time.sleep(args.post_screenshot_delay)
         if not screenWrapper.getScreenshot('screenshot.png'):
             log.error("getToRaidscreen: Failed retrieving screenshot before checking windows")
             if not again:
-                getToRaidscreen(maxAttempts, True)
+                getToRaidscreen(maxAttempts, False)
             else:
                 return False
             # failcount += 1
@@ -403,27 +402,6 @@ def getToRaidscreen(maxAttempts, checkAll=False, again=False):
         found = pogoWindowManager.lookForButton('screenshot.png', 1.60)
         if found:
             log.info("getToRaidscreen: Found button")
-        #if checkAll:
-            # also check for login and stuff...
-            #if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20):
-            #    log.info("getToRaidscreen: Found post-login OK button")
-            #    found = True
-            #    time.sleep(0.5)
-            #if not found and pogoWindowManager.lookForButton('screenshot.png', 3.01):
-            #    log.info("getToRaidscreen: Found post login news message")
-            #    found = True
-            #    time.sleep(0.5)
-        #if not found and pogoWindowManager.checkCloseExceptNearbyButton('screenshot.png', 123):
-        #    log.info("getToRaidscreen: Found (X) button (except nearby)")
-        #    found = True
-        #if not found and pogoWindowManager.lookForButton('screenshot.png', 1.05):
-        #    log.info("getToRaidscreen: Found weather warning")
-        #    found = True
-        #    time.sleep(0.5)
-        #if not found and pogoWindowManager.lookForButton('screenshot.png', 2.20, True):
-        #    log.info("getToRaidscreen: Found game quit popup")
-        #    found = True
-        #    time.sleep(0.5)
 
         log.info("getToRaidscreen: Previous checks found popups: %s" % str(found))
         if not found:
@@ -483,7 +461,7 @@ def checkSpeedWeatherWarningThread():
         if not telnMore.isPogoTopmost():
             log.warning("checkSpeedWeatherWarningThread: Starting Pogo")
             restartPogo()
-        reachedRaidscreen = getToRaidscreen(10, True)
+        reachedRaidscreen = getToRaidscreen(10, True)g
         if reachedRaidscreen:
             log.debug("checkSpeedWeatherWarningThread: checkSpeedWeatherWarningThread: reached raidscreen...")
             runWarningThreadEvent.set()
@@ -560,6 +538,7 @@ def main_thread():
                 updateRaidQueue(dbWrapper)
                 lastRaidQueueUpdate = curTime
 
+            windowLock.acquire()
             # Restart pogo every now and then...
             if args.restart_pogo > 0:
                 #log.debug("main: Current time - lastPogoRestart: %s" % str(curTime - lastPogoRestart))
@@ -569,6 +548,7 @@ def main_thread():
                     log.error("scanned " + str(args.restart_pogo) + " locations, restarting pogo")
                     restartPogo()
                     locationCount = 0
+            windowLock.release()
 
             # let's check for speed and weather warnings while we're walking/teleporting...
             runWarningThreadEvent.set()

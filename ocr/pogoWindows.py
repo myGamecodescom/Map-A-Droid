@@ -457,7 +457,7 @@ class PogoWindows:
             return True
 
     #checks for X button on any screen... could kill raidscreen, handle properly
-    def checkCloseExceptNearbyButton(self, filename, hash):
+    def checkCloseExceptNearbyButton(self, filename, hash, closeraid = False):
         try:
             screenshotRead = cv2.imread(filename)
         except:
@@ -467,12 +467,13 @@ class PogoWindows:
             log.error("Screenshot corrupted :(")
             return False
         
-        if (not os.path.isfile(filename) 
-            or self.__checkRaidLine(filename, hash)
-            or self.__checkRaidLine(filename, hash, True)):
-            #file not found or raid tab present
-            log.debug("checkCloseExceptNearbyButton: Not checking for close button (X). Input wrong OR nearby window open")
-            return False 
+        if not closeraid:
+            if (not os.path.isfile(filename) 
+                or self.__checkRaidLine(filename, hash)
+                or self.__checkRaidLine(filename, hash, True)):
+                #file not found or raid tab present
+                log.debug("checkCloseExceptNearbyButton: Not checking for close button (X). Input wrong OR nearby window open")
+                return False 
             
         log.debug("checkCloseExceptNearbyButton: Checking for close button (X). Input wrong OR nearby window open")   
         

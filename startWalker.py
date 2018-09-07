@@ -461,6 +461,7 @@ def reopenRaidTab():
     if not screenWrapper.getScreenshot('screenshot.png'):
         log.error("reopenRaidTab: Failed retrieving screenshot before checking for closebutton")
         return
+    pogoWindowManager.checkCloseExceptNearbyButton('screenshot.png', '123','True')
     getToRaidscreen(3)
     time.sleep(1)
 

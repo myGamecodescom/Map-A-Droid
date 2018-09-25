@@ -103,6 +103,10 @@ count INT(10) NOT NULL DEFAULT 1,
 PRIMARY KEY (hashid));
 ```
 
+```sql
+ALTER TABLE `trshash` ADD `modify` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER `count`;
+```
+
 Remember: The account you use for Map-A-Droid has to have CREATE/DROP permissions as well as 
 INSERT, UPDATE, DELETE, and SELECT!
 

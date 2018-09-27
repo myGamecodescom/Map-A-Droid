@@ -178,6 +178,13 @@ The command will look like this:
 * Improve error handling  
 * Support more/all resolutions  
 
+## XPRIMNTR
+
+* ImportError: cairo backend requires that cairocffi or pycairo is installed
+sudo -H pip install cairocffi
+* https://gist.github.com/jeffcogswell/62395900725acef1c0a5a608f7eb7a05 
+
+
 License
 ----
 
